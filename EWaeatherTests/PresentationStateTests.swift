@@ -47,7 +47,7 @@ final class PresentationStateTests: XCTestCase {
 
     func testForecastShowsOfflineAndCanRetry() async {
         let forecast = SampleWeatherRepository.forecast()
-        let repository = SequenceForecastRepository(responses: [.failure(.offline), .success(forecast)])
+        let repository = SequenceForecastRepository(responses: [.failure(.offline), .success(SampleWeatherRepository.snapshot())])
         let model = ForecastViewModel(city: city, getForecast: GetForecastUseCase(repository: repository))
 
         await model.loadIfNeeded()
@@ -67,7 +67,7 @@ final class PresentationStateTests: XCTestCase {
     }
 
     func testReappearingForecastDoesNotReloadLoadedData() async {
-        let repository = SequenceForecastRepository(responses: [.success(SampleWeatherRepository.forecast())])
+        let repository = SequenceForecastRepository(responses: [.success(SampleWeatherRepository.snapshot())])
         let model = ForecastViewModel(city: city, getForecast: GetForecastUseCase(repository: repository))
 
         await model.loadIfNeeded()
@@ -123,12 +123,12 @@ final class PresentationStateTests: XCTestCase {
 }
 
 private actor SequenceForecastRepository: ForecastProviding {
-    let responses: [Result<Forecast?, WeatherFailure>]
+    let responses: [Result<WeatherSnapshot?, WeatherFailure>]
     private(set) var callCount = 0
 
-    init(responses: [Result<Forecast?, WeatherFailure>]) { self.responses = responses }
+    init(responses: [Result<WeatherSnapshot?, WeatherFailure>]) { self.responses = responses }
 
-    func forecast(for city: City) async throws -> Forecast? {
+    func forecast(for city: City) async throws -> WeatherSnapshot? {
         let index = callCount
         callCount += 1
         guard responses.indices.contains(index) else { throw WeatherFailure.unavailable }
@@ -137,7 +137,7 @@ private actor SequenceForecastRepository: ForecastProviding {
 }
 
 private struct CancelledForecastRepository: ForecastProviding {
-    func forecast(for city: City) async throws -> Forecast? { throw CancellationError() }
+    func forecast(for city: City) async throws -> WeatherSnapshot? { throw CancellationError() }
 }
 
 private actor ControlledSearchRepository: CitySearching {

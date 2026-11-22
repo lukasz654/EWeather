@@ -10,9 +10,9 @@ struct SampleWeatherRepository: CitySearching, ForecastProviding {
         }
     }
 
-    func forecast(for city: City) async throws -> Forecast? {
+    func forecast(for city: City) async throws -> WeatherSnapshot? {
         try Task.checkCancellation()
-        return Self.forecast(timeZoneIdentifier: city.timeZoneIdentifier)
+        return Self.snapshot(timeZoneIdentifier: city.timeZoneIdentifier)
     }
 
     static let cities: [City] = [
@@ -33,6 +33,19 @@ struct SampleWeatherRepository: CitySearching, ForecastProviding {
             precipitationInterval: DateInterval(start: start, duration: 3600),
             hours: temperatures.enumerated().map { index, temperature in
                 HourlyForecast(time: start.addingTimeInterval(Double(index + 1) * 3600), temperature: temperature)
+            }
+        )
+    }
+
+    static func snapshot(timeZoneIdentifier: String = "Europe/Warsaw") -> WeatherSnapshot {
+        let forecast = Self.forecast(timeZoneIdentifier: timeZoneIdentifier)
+        return WeatherSnapshot(
+            updatedAt: forecast.updatedAt,
+            timeZoneIdentifier: forecast.timeZoneIdentifier,
+            temperature: forecast.temperature,
+            cloudCover: forecast.cloudCover,
+            hours: forecast.hours.map {
+                HourlyWeather(time: $0.time, temperature: $0.temperature, precipitationProbability: forecast.precipitationProbability)
             }
         )
     }
