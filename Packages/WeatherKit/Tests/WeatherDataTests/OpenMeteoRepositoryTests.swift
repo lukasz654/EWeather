@@ -1,11 +1,11 @@
-import WeatherApplication
+import WeatherData
 import WeatherDomain
 import XCTest
-@testable import EWaeather
+@testable import WeatherData
 
 @MainActor
 final class OpenMeteoRepositoryTests: XCTestCase {
-    private let city = SampleWeatherRepository.cities[0]
+    private let city = City(id: 1, name: "Bielsko-Biała", region: nil, country: "Polska", latitude: 49.82, longitude: 19.04, timeZoneIdentifier: "Europe/Warsaw")
 
     func testSearchEncodesPolishNamesSpacesAndHyphens() async throws {
         for name in ["Bielsko-Biała", "Nowy Sącz"] {
@@ -80,16 +80,6 @@ final class OpenMeteoRepositoryTests: XCTestCase {
         XCTAssertEqual(snapshot?.cloudCover, 65)
         XCTAssertEqual(snapshot?.hours.map(\.precipitationProbability), [20, 30, 40])
         XCTAssertEqual(snapshot?.hours[1].time, Date(timeIntervalSince1970: 1_795_356_000))
-    }
-
-    func testDecodedForecastWorksThroughTheUseCase() async throws {
-        let repository = forecastRepository(StubHTTPTransport(body: try forecastBody()))
-        let forecast = try await GetForecastUseCase(repository: repository).execute(city: city)
-
-        XCTAssertEqual(forecast?.hours.count, 2)
-        XCTAssertEqual(forecast?.precipitationProbability, 30)
-        XCTAssertEqual(forecast?.precipitationInterval, DateInterval(start: Date(timeIntervalSince1970: 1_795_352_400), duration: 3600))
-        XCTAssertEqual(forecast?.timeZoneIdentifier, "Europe/Warsaw")
     }
 
     func testNullAndOmittedWeatherValuesRemainMissing() async throws {

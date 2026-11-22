@@ -2,15 +2,15 @@ import WeatherDomain
 import Foundation
 
 @MainActor
-final class UserDefaultsSearchHistoryStore: SearchHistoryReading, SearchHistoryWriting {
+public final class UserDefaultsSearchHistoryStore: SearchHistoryReading, SearchHistoryWriting {
     private let defaults: UserDefaults
     private let key = "searchHistory.v1"
 
-    init(defaults: UserDefaults = .standard) {
+    public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
 
-    func loadHistory() throws -> [City] {
+    public func loadHistory() throws -> [City] {
         guard defaults.object(forKey: key) != nil else { return [] }
         guard let data = defaults.data(forKey: key) else { throw HistoryFailure.invalidData }
         do {
@@ -20,7 +20,7 @@ final class UserDefaultsSearchHistoryStore: SearchHistoryReading, SearchHistoryW
         }
     }
 
-    func saveHistory(_ cities: [City]) throws {
+    public func saveHistory(_ cities: [City]) throws {
         do {
             let data = try JSONEncoder().encode(cities.map(StoredCity.init))
             defaults.set(data, forKey: key)

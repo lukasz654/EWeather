@@ -1,7 +1,7 @@
 import WeatherDomain
 import Foundation
 
-protocol HTTPTransport: Sendable {
+public protocol HTTPTransport: Sendable {
     func data(for request: URLRequest) async throws -> (Data, URLResponse)
 }
 

@@ -1,4 +1,3 @@
-import WeatherDomain
 import Foundation
 
 enum WeatherFormatting {

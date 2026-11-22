@@ -1,3 +1,5 @@
+import WeatherApplication
+import WeatherData
 import WeatherDomain
 import XCTest
 @testable import EWaeather
@@ -76,11 +78,21 @@ final class ForecastIntegrationTests: XCTestCase {
         XCTAssertEqual(forecast.timeZoneIdentifier, "Europe/Warsaw")
     }
 
+    func testDecodedForecastWorksThroughTheUseCase() async throws {
+        let body = #"{"timezone":"Europe/Warsaw","current_units":{"time":"unixtime","temperature_2m":"°C","cloud_cover":"%"},"current":{"time":1795352400,"temperature_2m":8.5,"cloud_cover":65},"hourly_units":{"time":"unixtime","temperature_2m":"°C","precipitation_probability":"%"},"hourly":{"time":[1795352400,1795356000,1795359600],"temperature_2m":[8.5,8,7],"precipitation_probability":[20,30,40]}}"#
+        let repository = OpenMeteoForecastRepository(transport: StubHTTPTransport(body: body))
+        let forecast = try await GetForecastUseCase(repository: repository).execute(city: firstCity)
+
+        XCTAssertEqual(forecast?.hours.count, 2)
+        XCTAssertEqual(forecast?.precipitationProbability, 30)
+        XCTAssertEqual(forecast?.precipitationInterval, DateInterval(start: Date(timeIntervalSince1970: 1_795_352_400), duration: 3600))
+        XCTAssertEqual(forecast?.timeZoneIdentifier, "Europe/Warsaw")
+    }
+
     private func composition(transport: any HTTPTransport) -> AppComposition {
-        let api = OpenMeteoAPI(client: HTTPClient(transport: transport))
         return AppComposition(
-            cityRepository: OpenMeteoCityRepository(api: api),
-            forecastRepository: OpenMeteoForecastRepository(api: api), historyStore: MemorySearchHistoryStore()
+            cityRepository: OpenMeteoCityRepository(transport: transport),
+            forecastRepository: OpenMeteoForecastRepository(transport: transport), historyStore: MemorySearchHistoryStore()
         )
     }
 

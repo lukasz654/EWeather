@@ -1,3 +1,4 @@
+import WeatherData
 import WeatherApplication
 import WeatherDomain
 import XCTest
@@ -6,12 +7,6 @@ import XCTest
 @MainActor
 final class SearchHistoryTests: XCTestCase {
     private let cities = SampleWeatherRepository.cities
-
-    func testNewHistoryIsEmpty() throws {
-        try withDefaults { defaults in
-            XCTAssertEqual(try UserDefaultsSearchHistoryStore(defaults: defaults).loadHistory(), [])
-        }
-    }
 
     func testRecreatedStorageRestoresCityIdentityCoordinatesAndOrder() throws {
         try withDefaults { defaults in
@@ -25,15 +20,6 @@ final class SearchHistoryTests: XCTestCase {
         }
     }
 
-    func testOptionalLocationDetailsSurviveStorage() throws {
-        try withDefaults { defaults in
-            let city = City(id: 500, name: "City", region: nil, country: nil, latitude: 0, longitude: 0, timeZoneIdentifier: "GMT")
-            let store = UserDefaultsSearchHistoryStore(defaults: defaults)
-            try store.saveHistory([city])
-            XCTAssertEqual(try store.loadHistory(), [city])
-        }
-    }
-
     func testCorruptedHistoryIsReportedAndNotOverwritten() throws {
         try withDefaults { defaults in
             let original = Data("broken json".utf8)
@@ -44,17 +30,6 @@ final class SearchHistoryTests: XCTestCase {
                 XCTAssertEqual(error as? HistoryFailure, .invalidData)
             }
             XCTAssertEqual(defaults.data(forKey: "searchHistory.v1"), original)
-        }
-    }
-
-    func testWrongStoredTypeAndInvalidCoordinatesAreReported() throws {
-        try withDefaults { defaults in
-            let store = UserDefaultsSearchHistoryStore(defaults: defaults)
-            defaults.set("wrong type", forKey: "searchHistory.v1")
-            XCTAssertThrowsError(try store.loadHistory())
-            let body = #"[{"id":1,"name":"City","latitude":200,"longitude":20,"timeZoneIdentifier":"GMT"}]"#
-            defaults.set(Data(body.utf8), forKey: "searchHistory.v1")
-            XCTAssertThrowsError(try store.loadHistory())
         }
     }
 

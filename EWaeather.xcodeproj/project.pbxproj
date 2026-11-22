@@ -13,6 +13,8 @@
 		CD0200000000000000000001 /* WeatherDomain in Frameworks */ = {isa = PBXBuildFile; productRef = CF0200000000000000000001 /* WeatherDomain */; };
 		CD0100000000000000000002 /* WeatherApplication in Frameworks */ = {isa = PBXBuildFile; productRef = CF0100000000000000000002 /* WeatherApplication */; };
 		CD0200000000000000000002 /* WeatherApplication in Frameworks */ = {isa = PBXBuildFile; productRef = CF0200000000000000000002 /* WeatherApplication */; };
+		CD0100000000000000000003 /* WeatherData in Frameworks */ = {isa = PBXBuildFile; productRef = CF0100000000000000000003 /* WeatherData */; };
+		CD0200000000000000000003 /* WeatherData in Frameworks */ = {isa = PBXBuildFile; productRef = CF0200000000000000000003 /* WeatherData */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +58,7 @@
 			files = (
 				CD0200000000000000000001 /* WeatherDomain in Frameworks */,
 				CD0200000000000000000002 /* WeatherApplication in Frameworks */,
+				CD0200000000000000000003 /* WeatherData in Frameworks */,
 				B748E54E4C46A6F51B02BCB1 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -66,6 +69,7 @@
 			files = (
 				CD0100000000000000000001 /* WeatherDomain in Frameworks */,
 				CD0100000000000000000002 /* WeatherApplication in Frameworks */,
+				CD0100000000000000000003 /* WeatherData in Frameworks */,
 				C0B9F6CC9D194A48E786729E /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -131,6 +135,7 @@
 			packageProductDependencies = (
 				CF0100000000000000000001 /* WeatherDomain */,
 				CF0100000000000000000002 /* WeatherApplication */,
+				CF0100000000000000000003 /* WeatherData */,
 			);
 			productName = EWaeather;
 			productReference = E236357C433CAACCA4FCC80A /* EWaeather.app */;
@@ -157,6 +162,7 @@
 			packageProductDependencies = (
 				CF0200000000000000000001 /* WeatherDomain */,
 				CF0200000000000000000002 /* WeatherApplication */,
+				CF0200000000000000000003 /* WeatherData */,
 			);
 			productName = EWaeatherTests;
 			productReference = D7407D281976054B22F0C1DF /* EWaeatherTests.xctest */;
@@ -519,6 +525,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CF0000000000000000000001 /* XCLocalSwiftPackageReference "Packages/WeatherKit" */;
 			productName = WeatherApplication;
+		};
+		CF0100000000000000000003 /* WeatherData */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CF0000000000000000000001 /* XCLocalSwiftPackageReference "Packages/WeatherKit" */;
+			productName = WeatherData;
+		};
+		CF0200000000000000000003 /* WeatherData */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CF0000000000000000000001 /* XCLocalSwiftPackageReference "Packages/WeatherKit" */;
+			productName = WeatherData;
 		};
 /* End XCSwiftPackageProductDependency section */
 

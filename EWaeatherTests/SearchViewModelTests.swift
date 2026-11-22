@@ -1,3 +1,4 @@
+import WeatherData
 import WeatherApplication
 import WeatherDomain
 import XCTest
@@ -175,7 +176,7 @@ final class SearchViewModelTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suite) }
         // Synthetic location data, not a recording from the live service.
         let body = #"{"results":[{"id":987,"name":"Łódź","latitude":51.7,"longitude":19.4,"country":"Polska","timezone":"Europe/Warsaw"}]}"#
-        let repository = OpenMeteoCityRepository(api: OpenMeteoAPI(client: HTTPClient(transport: StubHTTPTransport(body: body))))
+        let repository = OpenMeteoCityRepository(transport: StubHTTPTransport(body: body))
         let model = makeModel(repository: repository, store: UserDefaultsSearchHistoryStore(defaults: defaults))
         model.updateQuery("Łódź")
         await model.search()
