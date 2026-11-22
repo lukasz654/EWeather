@@ -51,7 +51,6 @@ struct SearchView: View {
         }
         .navigationTitle("Pogoda")
         .task(id: SearchRequest(query: model.query, retryCount: retryCount)) {
-            guard !model.query.isEmpty || retryCount > 0 || model.state == .idle else { return }
             await model.search()
         }
     }
