@@ -6,6 +6,10 @@ struct SearchCitiesUseCase: Sendable {
     }
 
     func execute(query: String) async throws -> [City] {
-        try await repository.searchCities(named: query)
+        try Task.checkCancellation()
+        guard let term = try CityQuery.searchTerm(query) else { return [] }
+        let cities = try await repository.searchCities(named: term)
+        try Task.checkCancellation()
+        return cities
     }
 }
