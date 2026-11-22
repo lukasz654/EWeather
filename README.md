@@ -38,6 +38,10 @@ The inner layers do not depend on SwiftUI or storage details. These are logical 
 
 Use Product > Test or Command-U to run `EWaeatherTests`. The tests cover empty states, retry, cancellation, older search results, missing values and city time zones.
 
+Validation so far: the app and iOS test target compile with Xcode 27.1. Eleven logic tests passed on macOS using copies of the same model, use case and formatting files. They include rain time ranges within one day and across local midnight.
+
+Three user screenshots from an iPhone 18 Pro simulator were reviewed in light appearance: sample history, empty search results and weather details. The review led to a smaller empty-results message and shorter forecast dates. The updated layouts still need a visual check. Dark Mode, a smaller phone, larger text and the remaining screen states also need review.
+
 ## Planned data source
 
 Live weather will come from [Open-Meteo](https://open-meteo.com/), with attribution under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). City lookup uses location data from [GeoNames](https://www.geonames.org/). The current sample values are created locally.
