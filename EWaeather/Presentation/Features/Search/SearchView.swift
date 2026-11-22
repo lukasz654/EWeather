@@ -73,41 +73,6 @@ struct SearchView: View {
     }
 }
 
-private struct SearchAttributionView: View {
-    var body: some View {
-        HStack {
-            Link("Open-Meteo", destination: URL(string: "https://open-meteo.com/")!)
-            Text("·").accessibilityHidden(true)
-            Link("GeoNames", destination: URL(string: "https://www.geonames.org/")!)
-        }
-        .font(.footnote)
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(.bar)
-    }
-}
-
-private struct SearchEmptyResultsView: View {
-    var body: some View {
-        Label {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Brak wyników")
-                    .font(.headline)
-                Text("Nie znaleziono miasta. Sprawdź nazwę lub wpisz inną.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-        } icon: {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-        }
-        .padding(.vertical, 12)
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityElement(children: .combine)
-    }
-}
-
 private struct SearchRequest: Equatable {
     let query: String
     let retryCount: Int
