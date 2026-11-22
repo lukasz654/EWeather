@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ForecastView: View {
     @State var model: ForecastViewModel
+    @State private var reloadCount = 0
 
     var body: some View {
         List {
@@ -24,11 +25,15 @@ struct ForecastView: View {
         }
         .navigationTitle(model.city.name)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await model.loadIfNeeded() }
+        .task(id: reloadCount) {
+            await model.loadIfNeeded()
+        }
+        .onDisappear { model.cancelLoading() }
     }
 
     @ViewBuilder
     private func forecastSections(_ forecast: Forecast) -> some View {
+        let repeatedTimes = WeatherFormatting.repeatedLocalTimes(in: forecast.hours.map(\.time), timeZoneIdentifier: forecast.timeZoneIdentifier)
         Section {
             VStack(alignment: .leading, spacing: 8) {
                 Label("Temperatura", systemImage: "thermometer.medium")
@@ -64,12 +69,12 @@ struct ForecastView: View {
             ForEach(forecast.hours) { hour in
                 ViewThatFits(in: .horizontal) {
                     HStack {
-                        Text(WeatherFormatting.dateAndTime(hour.time, timeZoneIdentifier: forecast.timeZoneIdentifier))
+                        Text(WeatherFormatting.dateAndTime(hour.time, timeZoneIdentifier: forecast.timeZoneIdentifier, includesUTCOffset: repeatedTimes.contains(hour.time)))
                         Spacer(minLength: 16)
                         Text(WeatherFormatting.temperature(hour.temperature)).fontWeight(.medium)
                     }
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(WeatherFormatting.dateAndTime(hour.time, timeZoneIdentifier: forecast.timeZoneIdentifier))
+                        Text(WeatherFormatting.dateAndTime(hour.time, timeZoneIdentifier: forecast.timeZoneIdentifier, includesUTCOffset: repeatedTimes.contains(hour.time)))
                         Text(WeatherFormatting.temperature(hour.temperature)).fontWeight(.medium)
                     }
                 }
@@ -86,9 +91,9 @@ struct ForecastView: View {
             Link("Licencja CC BY 4.0", destination: URL(string: "https://creativecommons.org/licenses/by/4.0/")!)
             Link("Dane lokalizacji: GeoNames", destination: URL(string: "https://www.geonames.org/")!)
         } header: {
-            Text("Źródło planowanych danych")
+            Text("Źródło danych")
         } footer: {
-            Text("Wyświetlane wartości są przykładowe i nie pochodzą z usługi pogodowej.")
+            Text("Prognoza pochodzi z modeli pogodowych Open-Meteo.")
         }
     }
 
@@ -103,6 +108,6 @@ struct ForecastView: View {
     }
 
     private func reload() {
-        Task { await model.reload() }
+        reloadCount += 1
     }
 }

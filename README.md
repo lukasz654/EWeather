@@ -32,7 +32,7 @@ The app follows Clean Architecture with MVVM in the presentation layer and SOLID
 - `Data/Remote`: URLSession transport, HTTP handling, Open-Meteo requests, response types and mapping.
 - `Data/Repositories`: remote implementations of the city and weather contracts.
 - `Data/Local`: UserDefaults history storage with its own versioned JSON format.
-- `Data/Sample`: local sample weather and in-memory history. These do not call Open-Meteo or change saved history.
+- `EWaeatherTests`: local sample weather and in-memory history. These do not call Open-Meteo or change saved history.
 - `Presentation`: observable screen models, SwiftUI views and display formatting.
 - `App`: creates dependencies and connects the screens.
 

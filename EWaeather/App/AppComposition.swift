@@ -8,7 +8,7 @@ struct AppComposition {
 
     init(
         cityRepository: any CitySearching = OpenMeteoCityRepository(),
-        forecastRepository: any ForecastProviding = SampleWeatherRepository(),
+        forecastRepository: any ForecastProviding = OpenMeteoForecastRepository(),
         historyStore: any SearchHistoryReading & SearchHistoryWriting = UserDefaultsSearchHistoryStore()
     ) {
         self.cityRepository = cityRepository
