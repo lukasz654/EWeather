@@ -1,10 +1,10 @@
+import WeatherApplication
 import WeatherDomain
 import XCTest
-@testable import EWaeather
 
 @MainActor
 final class GetForecastUseCaseTests: XCTestCase {
-    private let city = SampleWeatherRepository.cities[0]
+    private let city = City(id: 1, name: "Bielsko-Biała", region: nil, country: "Polska", latitude: 49.82, longitude: 19.04, timeZoneIdentifier: "Europe/Warsaw")
     private let reference = Date(timeIntervalSince1970: 1_795_352_400)
 
     func testSelectsOnlyTheNext24HoursAndKeepsTheirOrder() async throws {
@@ -77,11 +77,10 @@ final class GetForecastUseCaseTests: XCTestCase {
 
         XCTAssertEqual(forecast.precipitationProbability, 30)
         XCTAssertEqual(interval.duration, 3600)
-        XCTAssertEqual(WeatherFormatting.time(forecast.hours[0].time, timeZoneIdentifier: forecast.timeZoneIdentifier), "00:00")
-        let label = WeatherFormatting.interval(interval, timeZoneIdentifier: forecast.timeZoneIdentifier)
-        XCTAssertTrue(label.contains("22 lis"))
-        XCTAssertTrue(label.contains("23 lis"))
-        XCTAssertTrue(label.hasSuffix("00:00"))
+        let calendar = cityCalendar(forecast.timeZoneIdentifier)
+        XCTAssertEqual(calendar.component(.hour, from: forecast.hours[0].time), 0)
+        XCTAssertEqual(calendar.component(.day, from: interval.start), 22)
+        XCTAssertEqual(calendar.component(.day, from: interval.end), 23)
     }
 
     func testAbsoluteHoursAreKeptAcrossTheSpringTimeChange() async throws {
@@ -96,7 +95,7 @@ final class GetForecastUseCaseTests: XCTestCase {
         let result = try await GetForecastUseCase(repository: SnapshotRepository(value: snapshot)).execute(city: city)
         let forecast = try XCTUnwrap(result)
 
-        XCTAssertEqual(forecast.hours.map { WeatherFormatting.time($0.time, timeZoneIdentifier: forecast.timeZoneIdentifier) }, ["03:00", "04:00"])
+        XCTAssertEqual(forecast.hours.map { cityCalendar(forecast.timeZoneIdentifier).component(.hour, from: $0.time) }, [3, 4])
         XCTAssertEqual(forecast.precipitationInterval?.duration, 3600)
         XCTAssertEqual(forecast.hours[1].time.timeIntervalSince(forecast.hours[0].time), 3600)
     }
@@ -113,10 +112,16 @@ final class GetForecastUseCaseTests: XCTestCase {
         let result = try await GetForecastUseCase(repository: SnapshotRepository(value: snapshot)).execute(city: city)
         let forecast = try XCTUnwrap(result)
 
-        XCTAssertEqual(forecast.hours.map { WeatherFormatting.time($0.time, timeZoneIdentifier: forecast.timeZoneIdentifier) }, ["02:00", "02:00"])
+        XCTAssertEqual(forecast.hours.map { cityCalendar(forecast.timeZoneIdentifier).component(.hour, from: $0.time) }, [2, 2])
         XCTAssertNotEqual(forecast.hours[0].id, forecast.hours[1].id)
         XCTAssertEqual(forecast.hours[1].time.timeIntervalSince(forecast.hours[0].time), 3600)
         XCTAssertEqual(forecast.precipitationProbability, 30)
+    }
+
+    private func cityCalendar(_ zone: String) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: zone)!
+        return calendar
     }
 
     private func date(_ text: String) throws -> Date {

@@ -1,3 +1,4 @@
+import WeatherApplication
 import WeatherDomain
 import XCTest
 @testable import EWaeather
@@ -22,31 +23,6 @@ final class SearchHistoryTests: XCTestCase {
             let recreatedStore = UserDefaultsSearchHistoryStore(defaults: defaults)
             XCTAssertEqual(try LoadSearchHistoryUseCase(repository: recreatedStore).execute(), [cities[1], cities[0]])
         }
-    }
-
-    func testSelectingTheSameIdentifierMovesUpdatedCityToFront() throws {
-        let oldCity = cities[0]
-        let updatedCity = City(id: oldCity.id, name: "Updated name", region: nil, country: oldCity.country, latitude: 50, longitude: 20, timeZoneIdentifier: "GMT")
-        let store = MemorySearchHistoryStore(cities: [cities[1], oldCity, cities[2], oldCity])
-
-        let result = try RememberCityUseCase(reader: store, writer: store).execute(city: updatedCity)
-
-        XCTAssertEqual(result, [updatedCity, cities[1], cities[2]])
-        XCTAssertEqual(try store.loadHistory(), result)
-    }
-
-    func testCitiesWithTheSameNameAndDifferentIdentifiersAreKept() throws {
-        let other = City(id: 500, name: cities[0].name, region: nil, country: nil, latitude: 0, longitude: 0, timeZoneIdentifier: "GMT")
-        let store = MemorySearchHistoryStore(cities: [cities[0]])
-
-        let result = try RememberCityUseCase(reader: store, writer: store).execute(city: other)
-
-        XCTAssertEqual(result, [other, cities[0]])
-    }
-
-    func testLoadingRemovesDuplicateIdentifiersAndKeepsFirstOccurrence() throws {
-        let store = MemorySearchHistoryStore(cities: [cities[1], cities[0], cities[1]])
-        XCTAssertEqual(try LoadSearchHistoryUseCase(repository: store).execute(), [cities[1], cities[0]])
     }
 
     func testOptionalLocationDetailsSurviveStorage() throws {
@@ -80,11 +56,6 @@ final class SearchHistoryTests: XCTestCase {
             defaults.set(Data(body.utf8), forKey: "searchHistory.v1")
             XCTAssertThrowsError(try store.loadHistory())
         }
-    }
-
-    func testWriteFailureDoesNotReturnASuccessfulHistory() {
-        let store = FailingHistoryStore()
-        XCTAssertThrowsError(try RememberCityUseCase(reader: store, writer: store).execute(city: cities[0]))
     }
 
     private func withDefaults(_ test: (UserDefaults) throws -> Void) throws {

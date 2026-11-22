@@ -1,14 +1,14 @@
 import WeatherDomain
 import Foundation
 
-struct GetForecastUseCase: Sendable {
+public struct GetForecastUseCase: Sendable {
     private let repository: any ForecastProviding
 
-    init(repository: any ForecastProviding) {
+    public init(repository: any ForecastProviding) {
         self.repository = repository
     }
 
-    func execute(city: City) async throws -> Forecast? {
+    public func execute(city: City) async throws -> Forecast? {
         try Task.checkCancellation()
         let result = try await repository.forecast(for: city)
         try Task.checkCancellation()

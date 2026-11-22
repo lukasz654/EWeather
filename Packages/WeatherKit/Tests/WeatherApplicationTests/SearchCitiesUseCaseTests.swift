@@ -1,6 +1,6 @@
+import WeatherApplication
 import WeatherDomain
 import XCTest
-@testable import EWaeather
 
 @MainActor
 final class SearchCitiesUseCaseTests: XCTestCase {
