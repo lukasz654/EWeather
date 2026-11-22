@@ -34,7 +34,7 @@ struct SearchView: View {
                     }
                 }
             case .empty:
-                StatusView(title: "Brak wyników", systemImage: "magnifyingglass", message: "Nie znaleziono miasta. Sprawdź nazwę lub wpisz inną.")
+                SearchEmptyResultsView()
                     .listRowBackground(Color.clear)
             case .failed(let failure):
                 FailureView(failure: failure) { retryCount += 1 }
@@ -53,6 +53,27 @@ struct SearchView: View {
         .task(id: SearchRequest(query: model.query, retryCount: retryCount)) {
             await model.search()
         }
+    }
+}
+
+private struct SearchEmptyResultsView: View {
+    var body: some View {
+        Label {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Brak wyników")
+                    .font(.headline)
+                Text("Nie znaleziono miasta. Sprawdź nazwę lub wpisz inną.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        } icon: {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+        }
+        .padding(.vertical, 12)
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .combine)
     }
 }
 
