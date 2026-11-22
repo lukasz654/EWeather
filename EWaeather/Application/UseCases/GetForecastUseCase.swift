@@ -16,6 +16,9 @@ struct GetForecastUseCase: Sendable {
             .filter { $0.time > snapshot.updatedAt }
             .sorted { $0.time < $1.time }
             .prefix(24)
+        guard snapshot.temperature != nil || snapshot.cloudCover != nil || hours.contains(where: {
+            $0.temperature != nil || $0.precipitationProbability != nil
+        }) else { return nil }
         let rainHour = hours.first
         return Forecast(
             updatedAt: snapshot.updatedAt,

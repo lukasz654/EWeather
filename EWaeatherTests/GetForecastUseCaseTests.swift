@@ -54,6 +54,74 @@ final class GetForecastUseCaseTests: XCTestCase {
         XCTAssertNil(forecast)
     }
 
+    func testPastValuesCannotMakeAnOtherwiseEmptyForecastLookAvailable() async throws {
+        let snapshot = WeatherSnapshot(
+            updatedAt: reference, timeZoneIdentifier: "GMT", temperature: nil, cloudCover: nil,
+            hours: [HourlyWeather(time: reference.addingTimeInterval(-3600), temperature: 8, precipitationProbability: 20)]
+        )
+        let forecast = try await GetForecastUseCase(repository: SnapshotRepository(value: snapshot)).execute(city: city)
+        XCTAssertNil(forecast)
+    }
+
+    func testRainIntervalAndHoursCrossLocalMidnight() async throws {
+        let current = try date("2026-11-22T22:45:00Z")
+        let midnight = try date("2026-11-22T23:00:00Z")
+        let snapshot = WeatherSnapshot(
+            updatedAt: current, timeZoneIdentifier: "Europe/Warsaw", temperature: 8, cloudCover: 65,
+            hours: [HourlyWeather(time: midnight, temperature: 7, precipitationProbability: 30)]
+        )
+        let result = try await GetForecastUseCase(repository: SnapshotRepository(value: snapshot)).execute(city: city)
+        let forecast = try XCTUnwrap(result)
+        let interval = try XCTUnwrap(forecast.precipitationInterval)
+
+        XCTAssertEqual(forecast.precipitationProbability, 30)
+        XCTAssertEqual(interval.duration, 3600)
+        XCTAssertEqual(WeatherFormatting.time(forecast.hours[0].time, timeZoneIdentifier: forecast.timeZoneIdentifier), "00:00")
+        let label = WeatherFormatting.interval(interval, timeZoneIdentifier: forecast.timeZoneIdentifier)
+        XCTAssertTrue(label.contains("22 lis"))
+        XCTAssertTrue(label.contains("23 lis"))
+        XCTAssertTrue(label.hasSuffix("00:00"))
+    }
+
+    func testAbsoluteHoursAreKeptAcrossTheSpringTimeChange() async throws {
+        let firstHour = try date("2026-03-29T01:00:00Z")
+        let snapshot = WeatherSnapshot(
+            updatedAt: try date("2026-03-29T00:30:00Z"), timeZoneIdentifier: "Europe/Warsaw", temperature: 8, cloudCover: 65,
+            hours: [
+                HourlyWeather(time: firstHour, temperature: 7, precipitationProbability: 30),
+                HourlyWeather(time: firstHour.addingTimeInterval(3600), temperature: 6, precipitationProbability: 40)
+            ]
+        )
+        let result = try await GetForecastUseCase(repository: SnapshotRepository(value: snapshot)).execute(city: city)
+        let forecast = try XCTUnwrap(result)
+
+        XCTAssertEqual(forecast.hours.map { WeatherFormatting.time($0.time, timeZoneIdentifier: forecast.timeZoneIdentifier) }, ["03:00", "04:00"])
+        XCTAssertEqual(forecast.precipitationInterval?.duration, 3600)
+        XCTAssertEqual(forecast.hours[1].time.timeIntervalSince(forecast.hours[0].time), 3600)
+    }
+
+    func testRepeatedAutumnClockHoursRemainDistinctAndInChronologicalOrder() async throws {
+        let firstHour = try date("2026-10-25T00:00:00Z")
+        let snapshot = WeatherSnapshot(
+            updatedAt: firstHour.addingTimeInterval(-900), timeZoneIdentifier: "Europe/Warsaw", temperature: 8, cloudCover: 65,
+            hours: [
+                HourlyWeather(time: firstHour, temperature: 7, precipitationProbability: 30),
+                HourlyWeather(time: firstHour.addingTimeInterval(3600), temperature: 6, precipitationProbability: 40)
+            ]
+        )
+        let result = try await GetForecastUseCase(repository: SnapshotRepository(value: snapshot)).execute(city: city)
+        let forecast = try XCTUnwrap(result)
+
+        XCTAssertEqual(forecast.hours.map { WeatherFormatting.time($0.time, timeZoneIdentifier: forecast.timeZoneIdentifier) }, ["02:00", "02:00"])
+        XCTAssertNotEqual(forecast.hours[0].id, forecast.hours[1].id)
+        XCTAssertEqual(forecast.hours[1].time.timeIntervalSince(forecast.hours[0].time), 3600)
+        XCTAssertEqual(forecast.precipitationProbability, 30)
+    }
+
+    private func date(_ text: String) throws -> Date {
+        try XCTUnwrap(ISO8601DateFormatter().date(from: text))
+    }
+
     func testCancellationIsPreservedEvenWhenProviderReturnsEmptyData() async {
         let task = Task {
             try await GetForecastUseCase(repository: CancellingSnapshotRepository()).execute(city: city)
