@@ -6,8 +6,8 @@ final class PresentationStateTests: XCTestCase {
     private let city = SampleWeatherRepository.cities[0]
 
     func testSearchDisplaysEmptyResultsWithoutHidingHistory() async {
-        let model = SearchViewModel(searchCities: SearchCitiesUseCase(repository: SampleWeatherRepository()), history: [city])
-        model.query = "Nieistniejące miasto"
+        let model = makeSearchModel(repository: SampleWeatherRepository(), history: [city])
+        model.updateQuery("Nieistniejące miasto")
 
         await model.search()
 
@@ -16,12 +16,12 @@ final class PresentationStateTests: XCTestCase {
     }
 
     func testClearingQueryRestoresInitialState() async {
-        let model = SearchViewModel(searchCities: SearchCitiesUseCase(repository: SampleWeatherRepository()), history: [city])
-        model.query = "Bielsko"
+        let model = makeSearchModel(repository: SampleWeatherRepository(), history: [city])
+        model.updateQuery("Bielsko")
         await model.search()
         XCTAssertEqual(model.state, .results([city]))
 
-        model.query = "   "
+        model.updateQuery("   ")
         await model.search()
 
         XCTAssertEqual(model.state, .idle)
@@ -29,11 +29,11 @@ final class PresentationStateTests: XCTestCase {
 
     func testOldSearchCannotReplaceNewerResults() async {
         let repository = ControlledSearchRepository()
-        let model = SearchViewModel(searchCities: SearchCitiesUseCase(repository: repository), history: [])
-        model.query = "old"
+        let model = makeSearchModel(repository: repository)
+        model.updateQuery("old")
         let oldRequest = Task { await model.search() }
         await repository.waitUntilStarted("old")
-        model.query = "new"
+        model.updateQuery("new")
         let newRequest = Task { await model.search() }
         await repository.waitUntilStarted("new")
 
@@ -43,6 +43,15 @@ final class PresentationStateTests: XCTestCase {
         await oldRequest.value
 
         XCTAssertEqual(model.state, .results([city]))
+    }
+
+    private func makeSearchModel(repository: any CitySearching, history: [City] = []) -> SearchViewModel {
+        let store = MemorySearchHistoryStore(cities: history)
+        return SearchViewModel(
+            searchCities: SearchCitiesUseCase(repository: repository),
+            loadHistory: LoadSearchHistoryUseCase(repository: store),
+            rememberCity: RememberCityUseCase(reader: store, writer: store), searchDelay: {}
+        )
     }
 
     func testForecastShowsOfflineAndCanRetry() async {

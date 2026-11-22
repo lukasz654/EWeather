@@ -7,15 +7,21 @@ struct SearchView: View {
     var body: some View {
         List {
             Section {
-                TextField("Nazwa miasta", text: $model.query)
+                TextField("Nazwa miasta", text: Binding(get: { model.query }, set: { model.updateQuery($0) }))
                     .textContentType(.addressCity)
                     .autocorrectionDisabled()
                     .submitLabel(.search)
                     .accessibilityLabel("Wyszukaj miasto")
+                    .onSubmit { retryCount += 1 }
             } header: {
                 Label("Wyszukaj miasto", systemImage: "magnifyingglass")
             } footer: {
-                Text("Wpisz nazwę miasta, np. Bielsko-Biała lub Nowy Sącz.")
+                if let message = model.validationMessage {
+                    Label(message, systemImage: "exclamationmark.circle")
+                        .foregroundStyle(.red)
+                } else {
+                    Text("Wpisz co najmniej dwie litery, np. Bielsko-Biała lub Nowy Sącz.")
+                }
             }
 
             switch model.state {
@@ -48,11 +54,35 @@ struct SearchView: View {
                     }
                 }
             }
+
+            if let message = model.historyMessage {
+                Section {
+                    Label(message, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.secondary)
+                    Button("Spróbuj ponownie") { model.retryHistory() }
+                }
+            }
         }
         .navigationTitle("Pogoda")
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) { SearchAttributionView() }
         .task(id: SearchRequest(query: model.query, retryCount: retryCount)) {
             await model.search()
         }
+    }
+}
+
+private struct SearchAttributionView: View {
+    var body: some View {
+        HStack {
+            Link("Open-Meteo", destination: URL(string: "https://open-meteo.com/")!)
+            Text("·").accessibilityHidden(true)
+            Link("GeoNames", destination: URL(string: "https://www.geonames.org/")!)
+        }
+        .font(.footnote)
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(.bar)
     }
 }
 
