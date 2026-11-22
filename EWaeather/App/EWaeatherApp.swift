@@ -4,11 +4,22 @@ import SwiftUI
 struct EWaeatherApp: App {
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
-                ContentUnavailableView("Pogoda", systemImage: "cloud.sun", description: Text("Wyszukaj miasto, aby sprawdzić prognozę."))
-                    .navigationTitle("EWaeather")
-            }
-            .environment(\.locale, Locale(identifier: "pl_PL"))
+            AppRootView()
+                .environment(\.locale, Locale(identifier: "pl_PL"))
+        }
+    }
+}
+
+struct AppRootView: View {
+    private let composition = AppComposition()
+    @State private var searchModel = AppComposition().makeSearchModel()
+
+    var body: some View {
+        NavigationStack {
+            SearchView(model: searchModel)
+                .navigationDestination(for: City.self) { city in
+                    ForecastView(model: composition.makeForecastModel(city: city))
+                }
         }
     }
 }
