@@ -1,3 +1,4 @@
+import WeatherDomain
 @MainActor
 struct LoadSearchHistoryUseCase {
     private let repository: any SearchHistoryReading

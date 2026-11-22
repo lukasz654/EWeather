@@ -1,11 +1,11 @@
 import Foundation
 
-enum CityQueryFailure: Error, Equatable {
+public enum CityQueryFailure: Error, Equatable {
     case invalidCharacters
 }
 
-enum CityQuery {
-    static func normalized(_ input: String) throws -> String {
+public enum CityQuery {
+    public static func normalized(_ input: String) throws -> String {
         let normalized = input.precomposedStringWithCanonicalMapping
         for character in normalized {
             if character == " " || character == "-" { continue }
@@ -17,7 +17,7 @@ enum CityQuery {
         return normalized
     }
 
-    static func searchTerm(_ input: String) throws -> String? {
+    public static func searchTerm(_ input: String) throws -> String? {
         let text = try normalized(input).trimmingCharacters(in: CharacterSet(charactersIn: " "))
         return text.filter(\.isLetter).count >= 2 ? text : nil
     }

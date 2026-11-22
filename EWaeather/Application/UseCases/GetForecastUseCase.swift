@@ -1,3 +1,4 @@
+import WeatherDomain
 import Foundation
 
 struct GetForecastUseCase: Sendable {

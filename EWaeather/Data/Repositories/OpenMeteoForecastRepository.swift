@@ -1,3 +1,4 @@
+import WeatherDomain
 struct OpenMeteoForecastRepository: ForecastProviding {
     private let api: OpenMeteoAPI
 

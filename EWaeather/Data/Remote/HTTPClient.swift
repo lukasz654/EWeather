@@ -1,3 +1,4 @@
+import WeatherDomain
 import Foundation
 
 protocol HTTPTransport: Sendable {

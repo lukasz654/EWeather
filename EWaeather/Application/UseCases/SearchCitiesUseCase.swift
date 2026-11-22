@@ -1,3 +1,4 @@
+import WeatherDomain
 struct SearchCitiesUseCase: Sendable {
     private let repository: any CitySearching
 

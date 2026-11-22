@@ -1,3 +1,4 @@
+import WeatherDomain
 import XCTest
 @testable import EWaeather
 

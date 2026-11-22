@@ -1,4 +1,5 @@
 @testable import EWaeather
+import WeatherDomain
 import Foundation
 
 /// Local fixtures for stage 1. These values are not weather observations or API responses.

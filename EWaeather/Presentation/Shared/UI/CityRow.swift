@@ -1,3 +1,4 @@
+import WeatherDomain
 import SwiftUI
 
 struct CityRow: View {

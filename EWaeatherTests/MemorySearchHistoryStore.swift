@@ -1,4 +1,5 @@
 @testable import EWaeather
+import WeatherDomain
 @MainActor
 final class MemorySearchHistoryStore: SearchHistoryReading, SearchHistoryWriting {
     private var cities: [City]

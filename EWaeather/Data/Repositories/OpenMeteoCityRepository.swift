@@ -1,3 +1,4 @@
+import WeatherDomain
 struct OpenMeteoCityRepository: CitySearching {
     private let api: OpenMeteoAPI
 

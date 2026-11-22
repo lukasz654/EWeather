@@ -1,3 +1,4 @@
+import WeatherDomain
 @MainActor
 struct RememberCityUseCase {
     private let reader: any SearchHistoryReading

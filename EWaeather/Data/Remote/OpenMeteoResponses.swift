@@ -1,3 +1,4 @@
+import WeatherDomain
 import Foundation
 
 // Only Data knows the provider's JSON field names and array format.

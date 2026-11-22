@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		B748E54E4C46A6F51B02BCB1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E15501E4B7125ABF8D4E63D1 /* Foundation.framework */; };
 		C0B9F6CC9D194A48E786729E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E15501E4B7125ABF8D4E63D1 /* Foundation.framework */; };
+		CD0100000000000000000001 /* WeatherDomain in Frameworks */ = {isa = PBXBuildFile; productRef = CF0100000000000000000001 /* WeatherDomain */; };
+		CD0200000000000000000001 /* WeatherDomain in Frameworks */ = {isa = PBXBuildFile; productRef = CF0200000000000000000001 /* WeatherDomain */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,6 +27,7 @@
 		D7407D281976054B22F0C1DF /* EWaeatherTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EWaeatherTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E15501E4B7125ABF8D4E63D1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		E236357C433CAACCA4FCC80A /* EWaeather.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EWaeather.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CF0000000000000000000002 /* WeatherKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Packages/WeatherKit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -49,6 +52,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CD0200000000000000000001 /* WeatherDomain in Frameworks */,
 				B748E54E4C46A6F51B02BCB1 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -57,6 +61,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CD0100000000000000000001 /* WeatherDomain in Frameworks */,
 				C0B9F6CC9D194A48E786729E /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -88,6 +93,7 @@
 				41FDDBFF2666907BDECB55B2 /* Frameworks */,
 				6EBAF5AB2FD3F17152926956 /* EWaeather */,
 				5826DB15994BA7B93B6A3999 /* EWaeatherTests */,
+				CF0000000000000000000002 /* WeatherKit */,
 			);
 			sourceTree = "<group>";
 		};
@@ -118,6 +124,9 @@
 				6EBAF5AB2FD3F17152926956 /* EWaeather */,
 			);
 			name = EWaeather;
+			packageProductDependencies = (
+				CF0100000000000000000001 /* WeatherDomain */,
+			);
 			productName = EWaeather;
 			productReference = E236357C433CAACCA4FCC80A /* EWaeather.app */;
 			productType = "com.apple.product-type.application";
@@ -137,8 +146,12 @@
 			);
 			fileSystemSynchronizedGroups = (
 				5826DB15994BA7B93B6A3999 /* EWaeatherTests */,
+				CF0000000000000000000002 /* WeatherKit */,
 			);
 			name = EWaeatherTests;
+			packageProductDependencies = (
+				CF0200000000000000000001 /* WeatherDomain */,
+			);
 			productName = EWaeatherTests;
 			productReference = D7407D281976054B22F0C1DF /* EWaeatherTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -165,6 +178,9 @@
 			minimizedProjectReferenceProxies = 0;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1EC5B40E93CA062731E83730 /* Products */;
+			packageReferences = (
+				CF0000000000000000000001 /* XCLocalSwiftPackageReference "Packages/WeatherKit" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -470,6 +486,26 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+/* Begin XCLocalSwiftPackageReference section */
+		CF0000000000000000000001 /* XCLocalSwiftPackageReference "Packages/WeatherKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/WeatherKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CF0100000000000000000001 /* WeatherDomain */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CF0000000000000000000001 /* XCLocalSwiftPackageReference "Packages/WeatherKit" */;
+			productName = WeatherDomain;
+		};
+		CF0200000000000000000001 /* WeatherDomain */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CF0000000000000000000001 /* XCLocalSwiftPackageReference "Packages/WeatherKit" */;
+			productName = WeatherDomain;
+		};
+/* End XCSwiftPackageProductDependency section */
+
 	};
 	rootObject = 5EC46F48EF6991B3888F12D3 /* Project object */;
 }
