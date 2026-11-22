@@ -53,7 +53,7 @@ struct ForecastView: View {
         } header: {
             Text("Warunki pogodowe")
         } footer: {
-            Text("Czas lokalny miasta: \(forecast.timeZoneIdentifier).")
+            Text("Wszystkie godziny podano w czasie lokalnym miasta.")
         }
 
         Section("Najbliższe godziny") {

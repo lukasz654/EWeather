@@ -15,12 +15,17 @@ enum WeatherFormatting {
     }
 
     static func dateAndTime(_ date: Date, timeZoneIdentifier: String) -> String {
-        date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: Locale(identifier: "pl_PL"), timeZone: cityTimeZone(timeZoneIdentifier)).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
+        date.formatted(Date.FormatStyle(date: .omitted, time: .omitted, locale: Locale(identifier: "pl_PL"), timeZone: cityTimeZone(timeZoneIdentifier)).day().month(.abbreviated).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
     }
 
     static func interval(_ interval: DateInterval?, timeZoneIdentifier: String) -> String {
         guard let interval else { return "Przedział niedostępny" }
-        return "\(dateAndTime(interval.start, timeZoneIdentifier: timeZoneIdentifier)) – \(dateAndTime(interval.end, timeZoneIdentifier: timeZoneIdentifier))"
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = cityTimeZone(timeZoneIdentifier)
+        let end = calendar.isDate(interval.start, inSameDayAs: interval.end)
+            ? time(interval.end, timeZoneIdentifier: timeZoneIdentifier)
+            : dateAndTime(interval.end, timeZoneIdentifier: timeZoneIdentifier)
+        return "\(dateAndTime(interval.start, timeZoneIdentifier: timeZoneIdentifier)) – \(end)"
     }
 
     private static func cityTimeZone(_ identifier: String) -> TimeZone {

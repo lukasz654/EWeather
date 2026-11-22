@@ -98,6 +98,28 @@ final class PresentationStateTests: XCTestCase {
         XCTAssertEqual(warsaw, "01:00")
         XCTAssertEqual(utc, "00:00")
     }
+
+    func testRainIntervalKeepsBothDatesWhenItCrossesLocalMidnight() {
+        let interval = DateInterval(start: Date(timeIntervalSince1970: 22 * 3600), duration: 3600)
+
+        let text = WeatherFormatting.interval(interval, timeZoneIdentifier: "Europe/Warsaw")
+
+        XCTAssertTrue(text.contains("1 sty"))
+        XCTAssertTrue(text.contains("2 sty"))
+        XCTAssertTrue(text.contains("23:00"))
+        XCTAssertTrue(text.contains("00:00"))
+        XCTAssertFalse(text.contains("1970"))
+    }
+
+    func testRainIntervalDoesNotRepeatTheDateWithinOneLocalDay() {
+        let interval = DateInterval(start: Date(timeIntervalSince1970: 12 * 3600), duration: 3600)
+
+        let text = WeatherFormatting.interval(interval, timeZoneIdentifier: "Europe/Warsaw")
+
+        XCTAssertTrue(text.contains("13:00"))
+        XCTAssertTrue(text.hasSuffix(" – 14:00"))
+        XCTAssertFalse(text.contains("1970"))
+    }
 }
 
 private actor SequenceForecastRepository: ForecastProviding {
