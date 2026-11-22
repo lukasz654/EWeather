@@ -53,10 +53,27 @@ final class GetForecastUseCaseTests: XCTestCase {
         let forecast = try await GetForecastUseCase(repository: SnapshotRepository(value: nil)).execute(city: city)
         XCTAssertNil(forecast)
     }
+
+    func testCancellationIsPreservedEvenWhenProviderReturnsEmptyData() async {
+        let task = Task {
+            try await GetForecastUseCase(repository: CancellingSnapshotRepository()).execute(city: city)
+        }
+        do {
+            _ = try await task.value
+            XCTFail("Expected cancellation")
+        } catch is CancellationError {} catch { XCTFail("Unexpected error: \(error)") }
+    }
 }
 
 private struct SnapshotRepository: ForecastProviding {
     let value: WeatherSnapshot?
 
     func forecast(for city: City) async throws -> WeatherSnapshot? { value }
+}
+
+private struct CancellingSnapshotRepository: ForecastProviding {
+    func forecast(for city: City) async throws -> WeatherSnapshot? {
+        withUnsafeCurrentTask { $0?.cancel() }
+        return nil
+    }
 }
