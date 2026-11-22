@@ -6,14 +6,14 @@ The app uses SwiftUI, native navigation, system icons and system colors. The int
 
 ## Development status
 
-Stage 3 connects city search to Open-Meteo and saves selected cities in UserDefaults. The search screen no longer uses a fixed sample list. **Weather details still use sample data**, with a visible label. Live weather details are planned for stage 4.
+Stages 3 and 4 connect city search and weather details to Open-Meteo. Selected cities are saved in UserDefaults. The running app does not use sample city lists or weather values; samples are kept in tests.
 
 - Search city names, including Bielsko-Biała and Nowy Sącz, with input validation and automatic search after a short pause.
 - Open a city from search results or saved history and return with the system back button.
 - Keep selected cities in history across app launches. Selecting a saved city moves it to the top.
-- View sample temperature, cloud cover, rain probability with its time range, and 24 hourly temperatures.
+- View current temperature, cloud cover, rain probability with its time range, and up to 24 hourly temperatures.
 
-The live search integration has been tested with controlled API responses.
+The search and weather integrations have been tested with controlled API responses.
 
 ## Run the app
 
@@ -21,7 +21,7 @@ The live search integration has been tested with controlled API responses.
 2. Select the `EWaeather` scheme and an iPhone simulator with iOS 17 or later.
 3. Run the app. No API key or external package is needed for this stage.
 
-For a physical device, select your signing team in the app target settings.
+For a physical device, select your signing team in the app target settings. Search and weather loading need an internet connection. Saved city history remains available offline; weather is not cached.
 
 ## Architecture
 
@@ -32,7 +32,7 @@ The app follows Clean Architecture with MVVM in the presentation layer and SOLID
 - `Data/Remote`: URLSession transport, HTTP handling, Open-Meteo requests, response types and mapping.
 - `Data/Repositories`: remote implementations of the city and weather contracts.
 - `Data/Local`: UserDefaults history storage with its own versioned JSON format.
-- `EWaeatherTests`: local sample weather and in-memory history. These do not call Open-Meteo or change saved history.
+- `EWaeatherTests`: local sample city search, weather and in-memory history. These do not call Open-Meteo or change saved history.
 - `Presentation`: observable screen models, SwiftUI views and display formatting.
 - `App`: creates dependencies and connects the screens.
 
@@ -49,6 +49,15 @@ Small contracts keep city search separate from weather loading. The remote adapt
 - History stores the city identity, coordinates and available location details. Read and write contracts are separate. Synchronous history operations share the main actor so read-modify-write steps cannot interleave.
 - A history read or write failure shows a separate message and a retry button. It does not block navigation. A failed save keeps the city visible for the current session. Corrupted stored data is reported and is not silently replaced.
 
+## Weather details behavior
+
+- Opening details loads weather using the selected city's coordinates. A different city gets its own screen model and request. Returning to search and opening details again creates a new request; an already loaded model keeps its values when it reappears.
+- The screen shows loading, weather values, an empty result, offline or a service/data error. Empty and failed states have a retry button. Retries run in the SwiftUI view task, which is cancelled when the screen closes.
+- Closing the screen also invalidates its request identifier. A late response cannot change a newer load, even if the provider ignores cancellation. Concurrent duplicate loads are ignored.
+- Missing values show `Brak danych`; missing hourly values keep their timestamp. Current conditions can still be shown when hourly data is unavailable. If current values and the selected future hours contain no weather values, the screen shows an empty result.
+- Dates and time ranges use the forecast city's time zone. Repeated local clock hours show UTC offsets so they can be told apart. Rain time ranges also show offsets if a clock change occurs inside the interval.
+- The live screen credits Open-Meteo, CC BY 4.0 and GeoNames.
+
 ## API decisions
 
 - City search uses HTTPS, `URLComponents`, Polish result names and up to 10 matches. It is not limited to Poland.
@@ -63,14 +72,14 @@ The request contract follows the [Geocoding API documentation](https://open-mete
 
 ## Tests
 
-Use Product > Test or Command-U to run `EWaeatherTests`. The tests cover input validation, debounce, history order and restoration, storage failures, empty states, retry, cancellation, older search results, missing values, city time zones, forecast selection, URL parameters, response mapping and HTTP 400/429/5xx errors.
+Use Product > Test or Command-U to run `EWaeatherTests`. The tests cover input validation, debounce, history order and restoration, storage failures, empty states, retry, cancellation, older responses, missing values, city time zones, midnight and clock changes, forecast selection, URL parameters, response mapping and HTTP 400/429/5xx errors.
 
-Validation so far: the app and iOS test target compile with Xcode 27.1. Sixty-seven tests passed on macOS using copies of the same non-UI source and test files. An integration test follows a controlled search response through selection, UserDefaults storage and a recreated screen model. These checks do not replace an iOS launch or an app restart check.
+Validation so far: the app and iOS test target compile with Xcode 27.1. Eighty-three tests passed on macOS using copies of the same non-UI source and test files, including app composition. Integration tests follow controlled HTTP responses through search and saved history, and through weather loading, different cities, reopening details, errors and retry. These checks do not replace an iOS launch or an app restart check.
 
 Three user screenshots from an iPhone 18 Pro simulator were reviewed in light appearance: sample history, empty search results and weather details. The review led to a smaller empty-results message and shorter forecast dates. The updated layouts still need a visual check. Dark Mode, a smaller phone, larger text and the remaining screen states also need review.
 
-Before accepting stage 3 on iOS, check Polish names, rejected typing and pasted text, rapid query changes, offline and retry states, and history after selecting a city and restarting the app. Review the updated screens in light and dark appearance. The real service response remains unverified here.
+Before accepting stages 3 and 4 on iOS, check Polish names, rejected typing and pasted text, rapid query changes, offline and retry states, and history after selecting a city and restarting the app. Check weather for different cities, all four required weather elements, back navigation, reopening details and leaving during a load or retry. Review the updated screens in light and dark appearance. Real service responses remain unverified here.
 
 ## Data source
 
-City search uses [Open-Meteo](https://open-meteo.com/), with location data from [GeoNames](https://www.geonames.org/). Live weather will also come from Open-Meteo, with attribution under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The weather values currently shown in details are created locally.
+City search and weather use [Open-Meteo](https://open-meteo.com/), with weather attribution under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Location data comes from [GeoNames](https://www.geonames.org/). Test weather values are created locally.
