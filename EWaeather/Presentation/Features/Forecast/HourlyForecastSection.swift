@@ -3,17 +3,11 @@ import WeatherDomain
 
 struct HourlyForecastSection: View {
     let forecast: Forecast?
-    let displayedRange: HourlyForecastRange?
-    let updateState: ForecastUpdateState
     @Binding var range: HourlyForecastRange
-    let retry: () -> Void
 
     var body: some View {
         Section("Najbliższe godziny") {
             HourlyForecastRangePicker(selection: $range)
-            if let displayedRange {
-                HourlyForecastUpdateView(state: updateState, displayedRange: displayedRange, retry: retry)
-            }
             if let forecast { rows(forecast) }
         }
     }
