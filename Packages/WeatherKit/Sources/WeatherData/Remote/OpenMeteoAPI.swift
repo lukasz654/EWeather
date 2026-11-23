@@ -35,6 +35,22 @@ struct OpenMeteoAPI: Sendable {
         return try await client.get(url, as: ForecastResponse.self)
     }
 
+    func dailyForecast(latitude: Double, longitude: Double) async throws -> DailyForecastResponse {
+        guard (-90...90).contains(latitude), (-180...180).contains(longitude) else {
+            throw WeatherFailure.invalidData
+        }
+        let url = try endpoint(host: "api.open-meteo.com", path: "/v1/forecast", items: [
+            URLQueryItem(name: "latitude", value: String(latitude)),
+            URLQueryItem(name: "longitude", value: String(longitude)),
+            URLQueryItem(name: "daily", value: "weather_code,temperature_2m_min,temperature_2m_max,precipitation_probability_max"),
+            URLQueryItem(name: "forecast_days", value: "3"),
+            URLQueryItem(name: "temperature_unit", value: "celsius"),
+            URLQueryItem(name: "timezone", value: "auto"),
+            URLQueryItem(name: "timeformat", value: "iso8601")
+        ])
+        return try await client.get(url, as: DailyForecastResponse.self)
+    }
+
     private func endpoint(host: String, path: String, items: [URLQueryItem]) throws -> URL {
         var components = URLComponents()
         components.scheme = "https"
