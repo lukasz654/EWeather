@@ -11,7 +11,7 @@ City search and weather details use Open-Meteo. Selected cities are saved in Use
 - Search city names, including Bielsko-Biała and Nowy Sącz, with input validation and automatic search after a short pause.
 - Open a city from search results or saved history and return with the system back button.
 - Keep selected cities in history across app launches. Selecting a saved city moves it to the top.
-- View current temperature, cloud cover, rain probability with its time range, and up to 24 hourly temperatures.
+- View current temperature, cloud cover, rain probability with its time range, and hourly temperatures for the next 3, 5, 8 or 12 hours.
 - Read a forecast for up to three local calendar days from today, with minimum and maximum temperatures, weather descriptions, system icons and maximum daily rain probability.
 
 ## Run the app
@@ -91,6 +91,8 @@ One local package keeps setup simple while making the core dependencies explicit
 ## Weather details behavior
 
 - Opening details loads weather using the selected city's coordinates. A different city gets its own screen model and request. Returning to search and opening details again creates a new request; an already loaded model keeps its values when it reappears.
+- Hourly rows show the time and temperature. A native picker offers 3, 5, 8 and 12 hours; each new details screen starts with 3 hours. Accessibility text sizes use a native menu instead of segments.
+- Changing the window starts a new hourly request and immediately invalidates the old result. The picker remains available while loading and after an error. Selecting the same window again keeps loaded data. Daily weather stays independent.
 - The screen shows loading, weather values, an empty result, offline or a service/data error. Empty and failed states have a retry button. Retries run in the SwiftUI view task, which is cancelled when the screen closes.
 - Closing the screen also invalidates its request identifier. A late response cannot change a newer load, even if the provider ignores cancellation. Concurrent duplicate loads are ignored.
 - Missing values show `Brak danych`; missing hourly values keep their timestamp. Current conditions can still be shown when hourly data is unavailable. If current values and the selected future hours contain no weather values, the screen shows an empty result.
@@ -109,9 +111,9 @@ One local package keeps setup simple while making the core dependencies explicit
 ## API decisions
 
 - City search uses HTTPS, `URLComponents`, Polish result names and up to 10 matches. It is not limited to Poland.
-- Weather requests ask for current temperature and cloud cover, plus 25 hourly temperature and rain probability steps. Only fields used by the app are requested.
+- Hourly requests ask for current temperature and cloud cover, plus hourly temperature and rain probability. The selected window controls `forecast_hours`: 3/5/8/12 displayed hours request 4/6/9/13 steps, including the current step that may need to be filtered out.
 - Temperatures use Celsius. Unix timestamps stay absolute; display formatting uses the forecast's time zone. Unknown forecast zones and unexpected units are data errors.
-- The use case selects up to 24 steps strictly after the current weather timestamp. Rain probability comes from the first selected step and refers to the hour ending at that timestamp.
+- The same `HourlyForecastRange` value controls the request and the use case limit. The use case selects up to the chosen number of steps strictly after the current weather timestamp. Rain probability comes from the first selected step and refers to the hour ending at that timestamp.
 - Daily requests use `forecast_days=3`, `timezone=auto`, `timeformat=iso8601` and only `weather_code`, `temperature_2m_min`, `temperature_2m_max` and `precipitation_probability_max`. The current and hourly request still uses Unix timestamps.
 - Daily units, array lengths, date order, duplicate dates, finite temperatures, minimum/maximum order and percentages are validated. Unknown weather codes have a neutral fallback.
 - Missing values stay missing. They are never changed to zero or replaced with a later hour. Mismatched hourly arrays, duplicate times and percentages outside 0–100 are rejected.
@@ -132,15 +134,15 @@ swift test --package-path Packages/WeatherKit
 | --- | --- | ---: |
 | `WeatherDomainTests` | City names, local calendar dates, identity and missing daily values | 8 |
 | `WeatherApplicationTests` | Search, hourly and daily selection, time boundaries, cancellation and history rules | 23 |
-| `WeatherDataTests` | HTTP, hourly and daily requests, mapping, weather codes, dates and isolated history storage | 34 |
-| `EWaeatherTests` | Screen states, debounce, retry, cancellation, dates, and independent forecast integration through composition | 54 |
+| `WeatherDataTests` | HTTP, hourly ranges and daily requests, mapping, weather codes, dates and isolated history storage | 35 |
+| `EWaeatherTests` | Screen states, range changes, debounce, retry, cancellation, dates and forecast integration | 59 |
 
 Package tests do not import the app. Domain and Application tests do not import WeatherData or use real network or storage implementations. App integration tests use the public data API with controlled HTTP responses. The app and data test targets each keep their own small transport stub so test helpers are not exposed as a library product.
 
 ## Validation and limits
 
-- **Automated checks:** 65 package tests and 54 non-UI app tests passed on macOS: 119 tests in total. The temporary app check uses copies of the app and test files linked to the actual local package products. It does not copy core module source. These are logic and integration tests, not iOS UI tests.
-- **Builds:** Debug build-for-testing and the Release app build passed for the iOS Simulator with Xcode 27.1 after adding the three-day forecast. The author previously confirmed that selected city history stays after restarting the app.
+- **Automated checks:** 66 package tests and 59 non-UI app tests passed on macOS: 125 tests in total. The temporary app check uses copies of the app and test files linked to the actual local package products. It does not copy core module source. These are logic and integration tests, not iOS UI tests.
+- **Builds:** Debug build-for-testing passed for the iOS Simulator with Xcode 27.1 after adding hourly range selection. The last verified Release build includes the three-day forecast and predates hourly range selection; a Release rebuild for this change remains unverified. The author previously confirmed that selected city history stays after restarting the app.
 - **Compatibility:** the project targets iOS 17 or later on iPhone. Source compilation passed for the app, all three modules and all four test targets with the iOS 17 simulator target on arm64 and x86_64. This does not launch the app. An actual run on an iOS 17 device or runtime remains unverified.
 - **Remaining device checks:** typing and pasted validation in the real keyboard, offline recovery and retry, leaving a request in progress, and all screen states on smaller phones and larger text.
 
