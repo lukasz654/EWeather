@@ -26,14 +26,15 @@ struct ForecastView: View {
                     .listRowBackground(Color.clear)
             }
             DailyForecastSection(model: dailyModel, retry: reloadDaily)
-            if case .loaded(let forecast) = model.state {
-                HourlyForecastSection(forecast: forecast)
-            }
+            HourlyForecastSection(
+                forecast: loadedForecast,
+                range: Binding(get: { model.range }, set: { model.selectRange($0) })
+            )
             ForecastAttributionSection()
         }
         .navigationTitle(model.city.name)
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: reloadCount) {
+        .task(id: ForecastRequest(range: model.range, retryCount: reloadCount)) {
             await model.loadIfNeeded()
         }
         .task(id: dailyReloadCount) {
@@ -45,9 +46,19 @@ struct ForecastView: View {
         }
     }
 
+    private var loadedForecast: Forecast? {
+        guard case .loaded(let forecast) = model.state else { return nil }
+        return forecast
+    }
+
     private func reloadDaily() { dailyReloadCount += 1 }
 
     private func reload() {
         reloadCount += 1
     }
+}
+
+private struct ForecastRequest: Equatable {
+    let range: HourlyForecastRange
+    let retryCount: Int
 }
