@@ -156,7 +156,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				5826DB15994BA7B93B6A3999 /* EWaeatherTests */,
-				CF0000000000000000000002 /* WeatherKit */,
 			);
 			name = EWaeatherTests;
 			packageProductDependencies = (
