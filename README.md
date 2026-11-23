@@ -12,6 +12,7 @@ City search and weather details use Open-Meteo. Selected cities are saved in Use
 - Open a city from search results or saved history and return with the system back button.
 - Keep selected cities in history across app launches. Selecting a saved city moves it to the top.
 - View current temperature, cloud cover, rain probability with its time range, and up to 24 hourly temperatures.
+- Read a forecast for up to three local calendar days from today, with minimum and maximum temperatures, weather descriptions, system icons and maximum daily rain probability.
 
 ## Run the app
 
@@ -35,8 +36,8 @@ The app follows Clean Architecture with MVVM in the presentation layer. One loca
 
 | Module or app area | Responsibility | Project dependencies |
 | --- | --- | --- |
-| `WeatherDomain` | City and weather models, city name validation, errors, and small repository contracts | None |
-| `WeatherApplication` | Search, forecast and history use cases; forecast window, history order and duplicate rules | `WeatherDomain` |
+| `WeatherDomain` | City and weather models, local calendar days, conditions, city name validation, errors, and small repository contracts | None |
+| `WeatherApplication` | Search, hourly and three-day forecast use cases, plus history order and duplicate rules | `WeatherDomain` |
 | `WeatherData` | URLSession transport, HTTP errors, Open-Meteo requests, response mapping and UserDefaults history storage | `WeatherDomain` |
 | `EWaeather/Presentation` | SwiftUI views, observable screen models, navigation and display formatting | `WeatherApplication`, `WeatherDomain` |
 | `EWaeather/App` | Entry point and dependency composition | All three modules |
@@ -96,12 +97,23 @@ One local package keeps setup simple while making the core dependencies explicit
 - Dates and time ranges use the forecast city's time zone. Repeated local clock hours show UTC offsets so they can be told apart. Rain time ranges also show offsets if a clock change occurs inside the interval.
 - The live screen credits Open-Meteo, CC BY 4.0 and GeoNames.
 
+## Forecast for three days
+
+- A separate section appears between current conditions and the hourly list. It requests three days beginning with the city's current day. If the provider has fewer days, the app shows the available data.
+- Each row shows the local date and weekday, a Polish weather description with an SF Symbol, minimum and maximum temperatures, and the maximum precipitation probability for that day. The daily condition describes the most severe weather expected that day.
+- Daily weather has its own repository, use case, screen model, request, loading state and retry action. A daily error keeps current and hourly weather available. Daily weather can also load when the current forecast fails.
+- Both requests belong to separate SwiftUI view tasks. Leaving details cancels them and invalidates unfinished loads. Loaded models keep their values when they reappear; reopening details creates new models and requests.
+- Missing values show `Brak danych`. Missing or unknown weather codes show `Brak opisu pogody` and a question mark symbol. A known condition can be shown without temperatures. A selected window with no weather values or known conditions produces the empty state.
+- Daily dates are calendar dates, not timestamps. The mapper reads the API's date-only ISO strings without shifting them into the device's time zone. Gregorian date validation, clock changes, month and year boundaries are covered by tests.
+
 ## API decisions
 
 - City search uses HTTPS, `URLComponents`, Polish result names and up to 10 matches. It is not limited to Poland.
 - Weather requests ask for current temperature and cloud cover, plus 25 hourly temperature and rain probability steps. Only fields used by the app are requested.
 - Temperatures use Celsius. Unix timestamps stay absolute; display formatting uses the forecast's time zone. Unknown forecast zones and unexpected units are data errors.
 - The use case selects up to 24 steps strictly after the current weather timestamp. Rain probability comes from the first selected step and refers to the hour ending at that timestamp.
+- Daily requests use `forecast_days=3`, `timezone=auto`, `timeformat=iso8601` and only `weather_code`, `temperature_2m_min`, `temperature_2m_max` and `precipitation_probability_max`. The current and hourly request still uses Unix timestamps.
+- Daily units, array lengths, date order, duplicate dates, finite temperatures, minimum/maximum order and percentages are validated. Unknown weather codes have a neutral fallback.
 - Missing values stay missing. They are never changed to zero or replaced with a later hour. Mismatched hourly arrays, duplicate times and percentages outside 0–100 are rejected.
 - Missing search region or country is allowed. If a search result has no time zone, its model uses GMT as a fallback. Weather details use the time zone returned by the forecast request.
 - HTTP errors are separate from data errors and offline failures. Timeouts and other connection failures are service errors. Cancellation is passed back without a user error. Server messages stay in the data layer.
@@ -118,21 +130,21 @@ swift test --package-path Packages/WeatherKit
 
 | Test target | Scope | Tests |
 | --- | --- | ---: |
-| `WeatherDomainTests` | City name validation and normalization | 4 |
-| `WeatherApplicationTests` | Validated search, forecast selection, time boundaries and history rules, using test repositories | 15 |
-| `WeatherDataTests` | HTTP failures, request parameters, response mapping and isolated UserDefaults storage | 23 |
-| `EWaeatherTests` | Screen states, debounce, retry, cancellation, older responses, date formatting and integration through composition | 41 |
+| `WeatherDomainTests` | City names, local calendar dates, identity and missing daily values | 8 |
+| `WeatherApplicationTests` | Search, hourly and daily selection, time boundaries, cancellation and history rules | 23 |
+| `WeatherDataTests` | HTTP, hourly and daily requests, mapping, weather codes, dates and isolated history storage | 34 |
+| `EWaeatherTests` | Screen states, debounce, retry, cancellation, dates, and independent forecast integration through composition | 54 |
 
 Package tests do not import the app. Domain and Application tests do not import WeatherData or use real network or storage implementations. App integration tests use the public data API with controlled HTTP responses. The app and data test targets each keep their own small transport stub so test helpers are not exposed as a library product.
 
 ## Validation and limits
 
-- **Automated checks:** 42 package tests and 41 non-UI app tests passed on macOS. The temporary app check uses copies of the app and test files linked to the actual local package products. It does not copy core module source. These are logic and integration tests, not iOS UI tests.
-- **Builds:** earlier Debug and Release builds passed for the iOS Simulator with Xcode 27.1. The author also confirmed that the latest app builds and that selected city history stays after restarting the app.
+- **Automated checks:** 65 package tests and 54 non-UI app tests passed on macOS: 119 tests in total. The temporary app check uses copies of the app and test files linked to the actual local package products. It does not copy core module source. These are logic and integration tests, not iOS UI tests.
+- **Builds:** Debug build-for-testing and the Release app build passed for the iOS Simulator with Xcode 27.1 after adding the three-day forecast. The author previously confirmed that selected city history stays after restarting the app.
 - **Compatibility:** the project targets iOS 17 or later on iPhone. Source compilation passed for the app, all three modules and all four test targets with the iOS 17 simulator target on arm64 and x86_64. This does not launch the app. An actual run on an iOS 17 device or runtime remains unverified.
 - **Remaining device checks:** typing and pasted validation in the real keyboard, offline recovery and retry, leaving a request in progress, and all screen states on smaller phones and larger text.
 
-The app does not cache weather. Internet access is required to load new search results and forecasts. History stores selected cities, rather than every typed query. History deletion and a multi-day forecast are outside this version's scope.
+The app does not cache weather. Internet access is required to load new search results and forecasts. History stores selected cities, rather than every typed query. History deletion is outside this version's scope. The optional multi-day forecast is implemented for three days.
 
 ## Data source
 
