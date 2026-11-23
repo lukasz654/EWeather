@@ -29,7 +29,7 @@
 
 /* Begin PBXFileReference section */
 		D7407D281976054B22F0C1DF /* EWaeatherTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EWaeatherTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		E15501E4B7125ABF8D4E63D1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		E15501E4B7125ABF8D4E63D1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		E236357C433CAACCA4FCC80A /* EWaeather.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EWaeather.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CF0000000000000000000002 /* WeatherKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Packages/WeatherKit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
