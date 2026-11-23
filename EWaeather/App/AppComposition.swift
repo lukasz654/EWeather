@@ -7,15 +7,18 @@ import Foundation
 struct AppComposition {
     private let cityRepository: any CitySearching
     private let forecastRepository: any ForecastProviding
+    private let dailyForecastRepository: any DailyForecastProviding
     private let historyStore: any SearchHistoryReading & SearchHistoryWriting
 
     init(
         cityRepository: any CitySearching = OpenMeteoCityRepository(),
         forecastRepository: any ForecastProviding = OpenMeteoForecastRepository(),
+        dailyForecastRepository: any DailyForecastProviding = OpenMeteoDailyForecastRepository(),
         historyStore: any SearchHistoryReading & SearchHistoryWriting = UserDefaultsSearchHistoryStore()
     ) {
         self.cityRepository = cityRepository
         self.forecastRepository = forecastRepository
+        self.dailyForecastRepository = dailyForecastRepository
         self.historyStore = historyStore
     }
 
@@ -29,5 +32,9 @@ struct AppComposition {
 
     func makeForecastModel(city: City, state: ForecastState = .idle) -> ForecastViewModel {
         ForecastViewModel(city: city, getForecast: GetForecastUseCase(repository: forecastRepository), initialState: state)
+    }
+
+    func makeDailyForecastModel(city: City, state: DailyForecastState = .idle) -> DailyForecastViewModel {
+        DailyForecastViewModel(city: city, getDailyForecast: GetDailyForecastUseCase(repository: dailyForecastRepository), initialState: state)
     }
 }

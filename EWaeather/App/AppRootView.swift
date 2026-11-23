@@ -15,7 +15,7 @@ struct AppRootView: View {
         NavigationStack(path: $path) {
             SearchView(model: searchModel)
                 .navigationDestination(for: City.self) { city in
-                    ForecastView(model: composition.makeForecastModel(city: city))
+                    ForecastView(model: composition.makeForecastModel(city: city), dailyModel: composition.makeDailyForecastModel(city: city))
                 }
         }
         .onChange(of: path) { oldPath, newPath in
