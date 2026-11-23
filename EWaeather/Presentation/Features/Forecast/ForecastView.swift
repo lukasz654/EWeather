@@ -28,7 +28,10 @@ struct ForecastView: View {
             DailyForecastSection(model: dailyModel, retry: reloadDaily)
             HourlyForecastSection(
                 forecast: loadedForecast,
-                range: Binding(get: { model.range }, set: { model.selectRange($0) })
+                displayedRange: model.loadedRange,
+                updateState: model.updateState,
+                range: Binding(get: { model.range }, set: { model.selectRange($0) }),
+                retry: reload
             )
             ForecastAttributionSection()
         }
