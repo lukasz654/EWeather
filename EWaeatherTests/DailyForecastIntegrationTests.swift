@@ -79,6 +79,49 @@ final class DailyForecastIntegrationTests: XCTestCase {
         XCTAssertEqual(DailyWeatherFormatting.description(days[0].condition), "Brak opisu pogody")
     }
 
+    func testHourlyRangeChangesRequestTheSelectedWindowWithoutReloadingDailyWeather() async throws {
+        let transport = DailyIntegrationTransport(
+            dailyReplies: [(200, try dailyBody(minimum: 2, maximum: 8))],
+            currentBody: try hourlyBody()
+        )
+        let composition = composition(transport)
+        let current = composition.makeForecastModel(city: city)
+        let daily = composition.makeDailyForecastModel(city: city)
+        await daily.loadIfNeeded()
+        let dailyState = daily.state
+        let ranges: [(HourlyForecastRange, Int)] = [(.three, 3), (.five, 5), (.eight, 8), (.twelve, 12)]
+        for (range, expectedCount) in ranges {
+            current.selectRange(range)
+            await current.loadIfNeeded()
+            guard case .loaded(let forecast) = current.state else { return XCTFail("Expected hourly weather") }
+            XCTAssertEqual(forecast.hours.count, expectedCount)
+            XCTAssertEqual(forecast.temperature, 8)
+            XCTAssertEqual(forecast.cloudCover, 65)
+            XCTAssertEqual(forecast.precipitationProbability, 30)
+            XCTAssertEqual(daily.state, dailyState)
+        }
+        let requests = await transport.currentHourCounts
+        let dailyRequests = await transport.dailyPoints
+        XCTAssertEqual(requests, ["4", "6", "9", "13"])
+        XCTAssertEqual(dailyRequests.count, 1)
+    }
+
+    private func hourlyBody() throws -> String {
+        let start = 1_795_352_400
+        let json: [String: Any] = [
+            "timezone": "Europe/Warsaw",
+            "current_units": ["time": "unixtime", "temperature_2m": "°C", "cloud_cover": "%"],
+            "current": ["time": start, "temperature_2m": 8, "cloud_cover": 65],
+            "hourly_units": ["time": "unixtime", "temperature_2m": "°C", "precipitation_probability": "%"],
+            "hourly": [
+                "time": (0...12).map { start + $0 * 3600 },
+                "temperature_2m": Array(repeating: 8, count: 13),
+                "precipitation_probability": Array(repeating: 30, count: 13)
+            ]
+        ]
+        return try XCTUnwrap(String(data: JSONSerialization.data(withJSONObject: json), encoding: .utf8))
+    }
+
     private func composition(_ transport: DailyIntegrationTransport) -> AppComposition {
         AppComposition(
             cityRepository: SampleWeatherRepository(),
@@ -119,13 +162,16 @@ private actor DailyIntegrationTransport: HTTPTransport {
     private let currentStatus: Int
     private var dailyReplies: [(Int, String)]
     private let dailyBodies: [String: String]
+    private let currentBody: String?
     private(set) var currentCalls = 0
+    private(set) var currentHourCounts: [String] = []
     private(set) var dailyPoints: [String] = []
 
-    init(currentStatus: Int = 200, dailyReplies: [(Int, String)] = [], dailyBodies: [String: String] = [:]) {
+    init(currentStatus: Int = 200, dailyReplies: [(Int, String)] = [], dailyBodies: [String: String] = [:], currentBody: String? = nil) {
         self.currentStatus = currentStatus
         self.dailyReplies = dailyReplies
         self.dailyBodies = dailyBodies
+        self.currentBody = currentBody
     }
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
@@ -145,8 +191,9 @@ private actor DailyIntegrationTransport: HTTPTransport {
             } else { throw URLError(.badServerResponse) }
         } else {
             currentCalls += 1
+            currentHourCounts.append(items.first(where: { $0.name == "forecast_hours" })?.value ?? "missing")
             status = currentStatus
-            body = #"{"timezone":"Europe/Warsaw","current_units":{"time":"unixtime","temperature_2m":"°C","cloud_cover":"%"},"current":{"time":1795352400,"temperature_2m":8,"cloud_cover":65}}"#
+            body = currentBody ?? #"{"timezone":"Europe/Warsaw","current_units":{"time":"unixtime","temperature_2m":"°C","cloud_cover":"%"},"current":{"time":1795352400,"temperature_2m":8,"cloud_cover":65}}"#
         }
         return (Data(body.utf8), HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)!)
     }
