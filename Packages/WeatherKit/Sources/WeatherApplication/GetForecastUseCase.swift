@@ -8,15 +8,15 @@ public struct GetForecastUseCase: Sendable {
         self.repository = repository
     }
 
-    public func execute(city: City) async throws -> Forecast? {
+    public func execute(city: City, range: HourlyForecastRange = .three) async throws -> Forecast? {
         try Task.checkCancellation()
-        let result = try await repository.forecast(for: city)
+        let result = try await repository.forecast(for: city, range: range)
         try Task.checkCancellation()
         guard let snapshot = result else { return nil }
         let hours = snapshot.hours
             .filter { $0.time > snapshot.updatedAt }
             .sorted { $0.time < $1.time }
-            .prefix(24)
+            .prefix(range.rawValue)
         guard snapshot.temperature != nil || snapshot.cloudCover != nil || hours.contains(where: {
             $0.temperature != nil || $0.precipitationProbability != nil
         }) else { return nil }

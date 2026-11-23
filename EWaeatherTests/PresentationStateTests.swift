@@ -139,7 +139,7 @@ private actor SequenceForecastRepository: ForecastProviding {
 
     init(responses: [Result<WeatherSnapshot?, WeatherFailure>]) { self.responses = responses }
 
-    func forecast(for city: City) async throws -> WeatherSnapshot? {
+    func forecast(for city: City, range: HourlyForecastRange) async throws -> WeatherSnapshot? {
         let index = callCount
         callCount += 1
         guard responses.indices.contains(index) else { throw WeatherFailure.unavailable }
@@ -148,7 +148,7 @@ private actor SequenceForecastRepository: ForecastProviding {
 }
 
 private struct CancelledForecastRepository: ForecastProviding {
-    func forecast(for city: City) async throws -> WeatherSnapshot? { throw CancellationError() }
+    func forecast(for city: City, range: HourlyForecastRange) async throws -> WeatherSnapshot? { throw CancellationError() }
 }
 
 private actor ControlledSearchRepository: CitySearching {

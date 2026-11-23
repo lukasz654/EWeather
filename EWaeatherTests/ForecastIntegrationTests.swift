@@ -27,7 +27,7 @@ final class ForecastIntegrationTests: XCTestCase {
         XCTAssertEqual(firstForecast.temperature, 8.5)
         XCTAssertEqual(firstForecast.cloudCover, 65)
         XCTAssertEqual(firstForecast.precipitationProbability, 30)
-        XCTAssertEqual(firstForecast.hours.count, 24)
+        XCTAssertEqual(firstForecast.hours.count, 3)
         XCTAssertEqual(firstForecast.precipitationInterval?.duration, 3600)
         XCTAssertEqual(secondForecast.temperature, 4)
         XCTAssertEqual(secondForecast.cloudCover, 25)
@@ -74,7 +74,7 @@ final class ForecastIntegrationTests: XCTestCase {
         XCTAssertEqual(forecast.cloudCover, 65)
         XCTAssertEqual(WeatherFormatting.temperature(forecast.temperature), "Brak danych")
         XCTAssertEqual(WeatherFormatting.percent(forecast.precipitationProbability), "Brak danych")
-        XCTAssertEqual(forecast.hours.count, 24)
+        XCTAssertEqual(forecast.hours.count, 3)
         XCTAssertEqual(forecast.timeZoneIdentifier, "Europe/Warsaw")
     }
 

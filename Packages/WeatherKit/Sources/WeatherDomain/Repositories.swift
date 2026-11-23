@@ -3,5 +3,5 @@ public protocol CitySearching: Sendable {
 }
 
 public protocol ForecastProviding: Sendable {
-    func forecast(for city: City) async throws -> WeatherSnapshot?
+    func forecast(for city: City, range: HourlyForecastRange) async throws -> WeatherSnapshot?
 }

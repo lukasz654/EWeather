@@ -59,7 +59,7 @@ final class OpenMeteoRepositoryTests: XCTestCase {
     func testForecastRequestUsesRequiredFieldsUnitsAndAbsoluteTime() async throws {
         let transport = StubHTTPTransport(body: try forecastBody())
         let repository = forecastRepository(transport)
-        let snapshot = try await repository.forecast(for: city)
+        let snapshot = try await repository.forecast(for: city, range: .three)
 
         let request = await transport.lastRequest
         let url = try XCTUnwrap(request?.url)
@@ -71,7 +71,7 @@ final class OpenMeteoRepositoryTests: XCTestCase {
         XCTAssertEqual(query["longitude"], String(city.longitude))
         XCTAssertEqual(query["current"], "temperature_2m,cloud_cover")
         XCTAssertEqual(query["hourly"], "temperature_2m,precipitation_probability")
-        XCTAssertEqual(query["forecast_hours"], "25")
+        XCTAssertEqual(query["forecast_hours"], "4")
         XCTAssertEqual(query["temperature_unit"], "celsius")
         XCTAssertEqual(query["timezone"], "auto")
         XCTAssertEqual(query["timeformat"], "unixtime")
@@ -82,12 +82,25 @@ final class OpenMeteoRepositoryTests: XCTestCase {
         XCTAssertEqual(snapshot?.hours[1].time, Date(timeIntervalSince1970: 1_795_356_000))
     }
 
+    func testEveryHourlyRangeControlsTheNumberOfRequestedSteps() async throws {
+        for range in HourlyForecastRange.allCases {
+            let transport = StubHTTPTransport(body: try forecastBody())
+            _ = try await forecastRepository(transport).forecast(for: city, range: range)
+            let request = await transport.lastRequest
+            let url = try XCTUnwrap(request?.url)
+            let components = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
+            let query = queryValues(components)
+            XCTAssertEqual(query["forecast_hours"], String(range.rawValue + 1))
+            XCTAssertNil(query["daily"])
+        }
+    }
+
     func testNullAndOmittedWeatherValuesRemainMissing() async throws {
         let body = try forecastBody { json in
             json["current"] = ["time": 1_795_352_400, "temperature_2m": NSNull()]
             json["hourly"] = ["time": [1_795_352_400, 1_795_356_000], "temperature_2m": [NSNull(), 0]]
         }
-        let snapshot = try await forecastRepository(StubHTTPTransport(body: body)).forecast(for: city)
+        let snapshot = try await forecastRepository(StubHTTPTransport(body: body)).forecast(for: city, range: .three)
 
         XCTAssertNil(snapshot?.temperature)
         XCTAssertNil(snapshot?.cloudCover)
@@ -104,7 +117,7 @@ final class OpenMeteoRepositoryTests: XCTestCase {
                 json["hourly"] = ["time": []]
             }
         ] {
-            let snapshot = try await forecastRepository(StubHTTPTransport(body: body)).forecast(for: city)
+            let snapshot = try await forecastRepository(StubHTTPTransport(body: body)).forecast(for: city, range: .three)
             XCTAssertNil(snapshot)
         }
     }
@@ -125,7 +138,7 @@ final class OpenMeteoRepositoryTests: XCTestCase {
         for change in changes {
             let body = try forecastBody(change)
             await assertWeatherFailure(.invalidData) {
-                _ = try await self.forecastRepository(StubHTTPTransport(body: body)).forecast(for: self.city)
+                _ = try await self.forecastRepository(StubHTTPTransport(body: body)).forecast(for: self.city, range: .three)
             }
         }
     }
@@ -144,7 +157,7 @@ final class OpenMeteoRepositoryTests: XCTestCase {
                 _ = try await self.cityRepository(transport).searchCities(named: "City")
             }
             await assertWeatherFailure(failure) {
-                _ = try await self.forecastRepository(transport).forecast(for: self.city)
+                _ = try await self.forecastRepository(transport).forecast(for: self.city, range: .three)
             }
         }
     }
@@ -156,7 +169,7 @@ final class OpenMeteoRepositoryTests: XCTestCase {
             XCTFail("Expected cancellation")
         } catch is CancellationError {} catch { XCTFail("Unexpected error: \(error)") }
         do {
-            _ = try await forecastRepository(transport).forecast(for: city)
+            _ = try await forecastRepository(transport).forecast(for: city, range: .three)
             XCTFail("Expected cancellation")
         } catch is CancellationError {} catch { XCTFail("Unexpected error: \(error)") }
     }
@@ -165,7 +178,7 @@ final class OpenMeteoRepositoryTests: XCTestCase {
         let transport = StubHTTPTransport()
         let invalidCity = City(id: 1, name: "Invalid", region: nil, country: nil, latitude: .nan, longitude: 20, timeZoneIdentifier: "GMT")
         await assertWeatherFailure(.invalidData) {
-            _ = try await self.forecastRepository(transport).forecast(for: invalidCity)
+            _ = try await self.forecastRepository(transport).forecast(for: invalidCity, range: .three)
         }
         let request = await transport.lastRequest
         XCTAssertNil(request)

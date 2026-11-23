@@ -12,9 +12,9 @@ struct SampleWeatherRepository: CitySearching, ForecastProviding {
         }
     }
 
-    func forecast(for city: City) async throws -> WeatherSnapshot? {
+    func forecast(for city: City, range: HourlyForecastRange) async throws -> WeatherSnapshot? {
         try Task.checkCancellation()
-        return Self.snapshot(timeZoneIdentifier: city.timeZoneIdentifier)
+        return Self.snapshot(timeZoneIdentifier: city.timeZoneIdentifier, range: range)
     }
 
     static let cities: [City] = [
@@ -23,7 +23,7 @@ struct SampleWeatherRepository: CitySearching, ForecastProviding {
         City(id: 3, name: "Warszawa", region: "Mazowieckie", country: "Polska", latitude: 52.23, longitude: 21.01, timeZoneIdentifier: "Europe/Warsaw")
     ]
 
-    static func forecast(timeZoneIdentifier: String = "Europe/Warsaw") -> Forecast {
+    static func forecast(timeZoneIdentifier: String = "Europe/Warsaw", range: HourlyForecastRange = .three) -> Forecast {
         let start = Date(timeIntervalSince1970: 1_795_352_400)
         let temperatures: [Double] = [8, 8, 7, 7, 6, 6, 5, 5, 5, 6, 7, 8, 9, 10, 11, 11, 10, 9, 9, 8, 8, 7, 7, 6]
         return Forecast(
@@ -33,14 +33,14 @@ struct SampleWeatherRepository: CitySearching, ForecastProviding {
             cloudCover: 65,
             precipitationProbability: 30,
             precipitationInterval: DateInterval(start: start, duration: 3600),
-            hours: temperatures.enumerated().map { index, temperature in
+            hours: temperatures.prefix(range.rawValue).enumerated().map { index, temperature in
                 HourlyForecast(time: start.addingTimeInterval(Double(index + 1) * 3600), temperature: temperature)
             }
         )
     }
 
-    static func snapshot(timeZoneIdentifier: String = "Europe/Warsaw") -> WeatherSnapshot {
-        let forecast = Self.forecast(timeZoneIdentifier: timeZoneIdentifier)
+    static func snapshot(timeZoneIdentifier: String = "Europe/Warsaw", range: HourlyForecastRange = .three) -> WeatherSnapshot {
+        let forecast = Self.forecast(timeZoneIdentifier: timeZoneIdentifier, range: range)
         return WeatherSnapshot(
             updatedAt: forecast.updatedAt,
             timeZoneIdentifier: forecast.timeZoneIdentifier,

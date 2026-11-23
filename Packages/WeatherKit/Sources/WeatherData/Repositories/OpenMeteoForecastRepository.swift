@@ -14,9 +14,9 @@ public struct OpenMeteoForecastRepository: ForecastProviding {
         self.api = api
     }
 
-    public func forecast(for city: City) async throws -> WeatherSnapshot? {
+    public func forecast(for city: City, range: HourlyForecastRange) async throws -> WeatherSnapshot? {
         do {
-            let response = try await api.forecast(latitude: city.latitude, longitude: city.longitude)
+            let response = try await api.forecast(latitude: city.latitude, longitude: city.longitude, hourCount: range.rawValue + 1)
             return try OpenMeteoMapper.snapshot(from: response)
         } catch let failure as HTTPFailure {
             throw failure.weatherFailure

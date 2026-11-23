@@ -7,19 +7,20 @@ final class GetForecastUseCaseTests: XCTestCase {
     private let city = City(id: 1, name: "Bielsko-Biała", region: nil, country: "Polska", latitude: 49.82, longitude: 19.04, timeZoneIdentifier: "Europe/Warsaw")
     private let reference = Date(timeIntervalSince1970: 1_795_352_400)
 
-    func testSelectsOnlyTheNext24HoursAndKeepsTheirOrder() async throws {
+    func testSelectsTheRequestedFutureHoursAndKeepsTheirOrder() async throws {
         let hours = (-1...26).reversed().map { hour in
             HourlyWeather(time: reference.addingTimeInterval(Double(hour) * 3600), temperature: Double(hour), precipitationProbability: hour == 1 ? 35 : 80)
         }
         let snapshot = WeatherSnapshot(updatedAt: reference, timeZoneIdentifier: "Europe/Warsaw", temperature: 8, cloudCover: 65, hours: hours)
 
-        let forecast = try await GetForecastUseCase(repository: SnapshotRepository(value: snapshot)).execute(city: city)
-
-        XCTAssertEqual(forecast?.hours.count, 24)
-        XCTAssertEqual(forecast?.hours.first?.time, reference.addingTimeInterval(3600))
-        XCTAssertEqual(forecast?.hours.last?.time, reference.addingTimeInterval(24 * 3600))
-        XCTAssertEqual(forecast?.precipitationProbability, 35)
-        XCTAssertEqual(forecast?.precipitationInterval, DateInterval(start: reference, duration: 3600))
+        for range in HourlyForecastRange.allCases {
+            let forecast = try await GetForecastUseCase(repository: SnapshotRepository(value: snapshot)).execute(city: city, range: range)
+            XCTAssertEqual(forecast?.hours.count, range.rawValue)
+            XCTAssertEqual(forecast?.hours.first?.time, reference.addingTimeInterval(3600))
+            XCTAssertEqual(forecast?.hours.last?.time, reference.addingTimeInterval(Double(range.rawValue) * 3600))
+            XCTAssertEqual(forecast?.precipitationProbability, 35)
+            XCTAssertEqual(forecast?.precipitationInterval, DateInterval(start: reference, duration: 3600))
+        }
     }
 
     func testMissingFirstHourValuesAreNotReplacedWithLaterWeather() async throws {
@@ -142,11 +143,11 @@ final class GetForecastUseCaseTests: XCTestCase {
 private struct SnapshotRepository: ForecastProviding {
     let value: WeatherSnapshot?
 
-    func forecast(for city: City) async throws -> WeatherSnapshot? { value }
+    func forecast(for city: City, range: HourlyForecastRange) async throws -> WeatherSnapshot? { value }
 }
 
 private struct CancellingSnapshotRepository: ForecastProviding {
-    func forecast(for city: City) async throws -> WeatherSnapshot? {
+    func forecast(for city: City, range: HourlyForecastRange) async throws -> WeatherSnapshot? {
         withUnsafeCurrentTask { $0?.cancel() }
         return nil
     }

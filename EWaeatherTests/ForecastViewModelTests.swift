@@ -101,7 +101,7 @@ private actor GatedForecastRepository: ForecastProviding {
     private var waiters: [Int: CheckedContinuation<Void, Never>] = [:]
     private(set) var callCount = 0
 
-    func forecast(for city: City) async throws -> WeatherSnapshot? {
+    func forecast(for city: City, range: HourlyForecastRange) async throws -> WeatherSnapshot? {
         let index = callCount
         callCount += 1
         // Intentionally ignores cancellation to exercise protection against late responses.
@@ -127,7 +127,7 @@ private actor RetryingForecastRepository: ForecastProviding {
 
     init(firstFailure: WeatherFailure?) { self.firstFailure = firstFailure }
 
-    func forecast(for city: City) async throws -> WeatherSnapshot? {
+    func forecast(for city: City, range: HourlyForecastRange) async throws -> WeatherSnapshot? {
         callCount += 1
         if callCount == 1 {
             if let firstFailure { throw firstFailure }

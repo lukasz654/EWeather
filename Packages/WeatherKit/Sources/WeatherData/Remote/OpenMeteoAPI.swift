@@ -18,7 +18,7 @@ struct OpenMeteoAPI: Sendable {
         return try await client.get(url, as: GeocodingResponse.self)
     }
 
-    func forecast(latitude: Double, longitude: Double) async throws -> ForecastResponse {
+    func forecast(latitude: Double, longitude: Double, hourCount: Int) async throws -> ForecastResponse {
         guard (-90...90).contains(latitude), (-180...180).contains(longitude) else {
             throw WeatherFailure.invalidData
         }
@@ -27,7 +27,7 @@ struct OpenMeteoAPI: Sendable {
             URLQueryItem(name: "longitude", value: String(longitude)),
             URLQueryItem(name: "current", value: "temperature_2m,cloud_cover"),
             URLQueryItem(name: "hourly", value: "temperature_2m,precipitation_probability"),
-            URLQueryItem(name: "forecast_hours", value: "25"),
+            URLQueryItem(name: "forecast_hours", value: String(hourCount)),
             URLQueryItem(name: "temperature_unit", value: "celsius"),
             URLQueryItem(name: "timezone", value: "auto"),
             URLQueryItem(name: "timeformat", value: "unixtime")
