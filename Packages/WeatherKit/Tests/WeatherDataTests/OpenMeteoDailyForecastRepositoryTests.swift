@@ -108,6 +108,8 @@ final class OpenMeteoDailyForecastRepositoryTests: XCTestCase {
         for change in changes {
             await assertFailure(.invalidData, transport: StubHTTPTransport(body: try body(change: change)))
         }
+        let valuesWithoutDates = try body(dates: []) { $0["temperature_2m_min"] = [2] }
+        await assertFailure(.invalidData, transport: StubHTTPTransport(body: valuesWithoutDates))
     }
 
     func testMapsTheDocumentedWeatherCodeMeanings() async throws {

@@ -4,15 +4,18 @@ import WeatherDomain
 enum OpenMeteoDailyForecastMapper {
     static func days(from response: DailyForecastResponse) throws -> [DailyForecast] {
         guard TimeZone(identifier: response.timezone) != nil else { throw WeatherFailure.invalidData }
-        guard let daily = response.daily, !daily.time.isEmpty else { return [] }
+        guard let daily = response.daily else { return [] }
+        guard [daily.minimumTemperature?.count, daily.maximumTemperature?.count,
+               daily.maximumPrecipitationProbability?.count, daily.weatherCode?.count]
+                .allSatisfy({ $0 == nil || $0 == daily.time.count }) else {
+            throw WeatherFailure.invalidData
+        }
+        guard !daily.time.isEmpty else { return [] }
         guard response.dailyUnits?.time == "iso8601",
               response.dailyUnits?.minimumTemperature == "°C",
               response.dailyUnits?.maximumTemperature == "°C",
               response.dailyUnits?.maximumPrecipitationProbability == "%",
-              response.dailyUnits?.weatherCode?.lowercased() == "wmo code",
-              [daily.minimumTemperature?.count, daily.maximumTemperature?.count,
-               daily.maximumPrecipitationProbability?.count, daily.weatherCode?.count]
-                .allSatisfy({ $0 == nil || $0 == daily.time.count }) else {
+              response.dailyUnits?.weatherCode?.lowercased() == "wmo code" else {
             throw WeatherFailure.invalidData
         }
         var previous: ForecastDay?
