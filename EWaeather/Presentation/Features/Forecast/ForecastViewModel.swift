@@ -15,13 +15,22 @@ enum ForecastState: Equatable {
 final class ForecastViewModel {
     let city: City
     private(set) var state: ForecastState
+    private(set) var range: HourlyForecastRange
     @ObservationIgnored private let getForecast: GetForecastUseCase
     @ObservationIgnored private var requestID = UUID()
 
-    init(city: City, getForecast: GetForecastUseCase, initialState: ForecastState = .idle) {
+    init(city: City, getForecast: GetForecastUseCase, initialState: ForecastState = .idle, range: HourlyForecastRange = .three) {
         self.city = city
         self.getForecast = getForecast
         self.state = initialState
+        self.range = range
+    }
+
+    func selectRange(_ range: HourlyForecastRange) {
+        guard self.range != range else { return }
+        requestID = UUID()
+        self.range = range
+        state = .idle
     }
 
     func loadIfNeeded() async {
@@ -43,7 +52,7 @@ final class ForecastViewModel {
         requestID = currentID
         state = .loading
         do {
-            let forecast = try await getForecast.execute(city: city)
+            let forecast = try await getForecast.execute(city: city, range: range)
             try Task.checkCancellation()
             guard requestID == currentID else { return }
             state = forecast.map(ForecastState.loaded) ?? .empty

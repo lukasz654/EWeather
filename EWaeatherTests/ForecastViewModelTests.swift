@@ -91,6 +91,70 @@ final class ForecastViewModelTests: XCTestCase {
         }
     }
 
+    func testChangingRangeIgnoresAnOlderResponseWithoutCancellation() async {
+        let repository = GatedForecastRepository()
+        let model = makeModel(repository)
+        let first = Task { await model.loadIfNeeded() }
+        await repository.waitUntilStarted(0)
+        model.selectRange(.eight)
+        XCTAssertEqual(model.state, .idle)
+        let second = Task { await model.loadIfNeeded() }
+        await repository.waitUntilStarted(1)
+        await repository.finish(1, with: SampleWeatherRepository.snapshot(range: .twelve))
+        await second.value
+        XCTAssertEqual(model.state, .loaded(SampleWeatherRepository.forecast(range: .eight)))
+        await repository.finish(0, with: SampleWeatherRepository.snapshot())
+        await first.value
+        XCTAssertEqual(model.range, .eight)
+        XCTAssertEqual(model.state, .loaded(SampleWeatherRepository.forecast(range: .eight)))
+    }
+
+    func testRepeatedRangeChoiceKeepsLoadedDataAndDoesNotRequestAgain() async {
+        let repository = RecordingRangeRepository()
+        let model = makeModel(repository)
+        model.selectRange(.five)
+        await model.loadIfNeeded()
+        XCTAssertEqual(model.state, .loaded(SampleWeatherRepository.forecast(range: .five)))
+        model.selectRange(.five)
+        await model.loadIfNeeded()
+        let firstRanges = await repository.ranges
+        XCTAssertEqual(firstRanges, [.five])
+        model.selectRange(.twelve)
+        XCTAssertEqual(model.state, .idle)
+        await model.loadIfNeeded()
+        XCTAssertEqual(model.state, .loaded(SampleWeatherRepository.forecast(range: .twelve)))
+        let finalRanges = await repository.ranges
+        XCTAssertEqual(finalRanges, [.five, .twelve])
+    }
+
+    func testCancelledPreviousRangeDoesNotResetTheNewLoad() async {
+        let repository = GatedForecastRepository()
+        let model = makeModel(repository)
+        let first = Task { await model.loadIfNeeded() }
+        await repository.waitUntilStarted(0)
+        model.selectRange(.five)
+        first.cancel()
+        let second = Task { await model.loadIfNeeded() }
+        await repository.waitUntilStarted(1)
+        await repository.finish(0, with: nil)
+        await first.value
+        XCTAssertEqual(model.state, .loading)
+        XCTAssertEqual(model.range, .five)
+        await repository.finish(1, with: SampleWeatherRepository.snapshot(range: .five))
+        await second.value
+        XCTAssertEqual(model.state, .loaded(SampleWeatherRepository.forecast(range: .five)))
+    }
+
+    func testRangeCanBeChangedAfterAFailure() async {
+        let repository = RetryingForecastRepository(firstFailure: .offline)
+        let model = makeModel(repository)
+        await model.loadIfNeeded()
+        XCTAssertEqual(model.state, .failed(.offline))
+        model.selectRange(.twelve)
+        await model.loadIfNeeded()
+        XCTAssertEqual(model.state, .loaded(SampleWeatherRepository.forecast(range: .twelve)))
+    }
+
     private func makeModel(_ repository: any ForecastProviding) -> ForecastViewModel {
         ForecastViewModel(city: city, getForecast: GetForecastUseCase(repository: repository))
     }
@@ -133,6 +197,15 @@ private actor RetryingForecastRepository: ForecastProviding {
             if let firstFailure { throw firstFailure }
             return nil
         }
-        return SampleWeatherRepository.snapshot()
+        return SampleWeatherRepository.snapshot(range: range)
+    }
+}
+
+private actor RecordingRangeRepository: ForecastProviding {
+    private(set) var ranges: [HourlyForecastRange] = []
+
+    func forecast(for city: City, range: HourlyForecastRange) async throws -> WeatherSnapshot? {
+        ranges.append(range)
+        return SampleWeatherRepository.snapshot(timeZoneIdentifier: city.timeZoneIdentifier, range: range)
     }
 }

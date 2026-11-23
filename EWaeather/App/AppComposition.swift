@@ -30,8 +30,8 @@ struct AppComposition {
         )
     }
 
-    func makeForecastModel(city: City, state: ForecastState = .idle) -> ForecastViewModel {
-        ForecastViewModel(city: city, getForecast: GetForecastUseCase(repository: forecastRepository), initialState: state)
+    func makeForecastModel(city: City, state: ForecastState = .idle, range: HourlyForecastRange = .three) -> ForecastViewModel {
+        ForecastViewModel(city: city, getForecast: GetForecastUseCase(repository: forecastRepository), initialState: state, range: range)
     }
 
     func makeDailyForecastModel(city: City, state: DailyForecastState = .idle) -> DailyForecastViewModel {
