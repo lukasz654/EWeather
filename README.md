@@ -19,8 +19,8 @@ City search and weather details use Open-Meteo. Selected cities are saved in Use
 Clone the repository, then open the Xcode project:
 
 ```sh
-git clone https://github.com/lukasz654/EWaeather.git
-cd EWaeather
+git clone https://github.com/lukasz654/EWeather.git
+cd EWeather
 open EWaeather.xcodeproj
 ```
 
