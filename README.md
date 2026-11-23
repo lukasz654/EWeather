@@ -4,18 +4,24 @@ EWaeather is a native iOS weather app for the Empik iOS recruitment task. Its pu
 
 The app uses SwiftUI, native navigation, system icons and system colors. The interface is in Polish and follows the device appearance, including Dark Mode.
 
-## Development status
+## Features
 
-Stages 3 and 4 connect city search and weather details to Open-Meteo. Selected cities are saved in UserDefaults. The running app does not use sample city lists or weather values; samples are kept in tests.
+City search and weather details use Open-Meteo. Selected cities are saved in UserDefaults. The running app does not use sample city lists or weather values; samples are kept in tests.
 
 - Search city names, including Bielsko-Biała and Nowy Sącz, with input validation and automatic search after a short pause.
 - Open a city from search results or saved history and return with the system back button.
 - Keep selected cities in history across app launches. Selecting a saved city moves it to the top.
 - View current temperature, cloud cover, rain probability with its time range, and up to 24 hourly temperatures.
 
-The search and weather integrations have been tested with controlled API responses.
-
 ## Run the app
+
+Clone the repository, then open the Xcode project:
+
+```sh
+git clone https://github.com/lukasz654/EWaeather.git
+cd EWaeather
+open EWaeather.xcodeproj
+```
 
 1. Open `EWaeather.xcodeproj` in Xcode 26 or 27.
 2. Select the `EWaeather` scheme and an iPhone simulator with iOS 17 or later.
@@ -119,11 +125,14 @@ swift test --package-path Packages/WeatherKit
 
 Package tests do not import the app. Domain and Application tests do not import WeatherData or use real network or storage implementations. App integration tests use the public data API with controlled HTTP responses. The app and data test targets each keep their own small transport stub so test helpers are not exposed as a library product.
 
-Validation after modularization: the app and its iOS test target compile in Debug with Xcode 27.1, and the app also builds in Release for the iOS Simulator. All 42 package tests passed directly on macOS. The remaining 41 non-UI app tests passed on macOS using copies of the app source and test files linked to the actual local package products. No core source files are copied into that temporary check. Integration tests cover controlled HTTP responses through search and saved history, and weather loading, different cities, reopening details, errors and retry. These checks do not replace an iOS launch or an app restart check.
+## Validation and limits
 
-Three user screenshots from an iPhone 18 Pro simulator were reviewed in light appearance: sample history, empty search results and weather details. The review led to a smaller empty-results message and shorter forecast dates. The updated layouts still need a visual check. Dark Mode, a smaller phone, larger text and the remaining screen states also need review.
+- **Automated checks:** 42 package tests and 41 non-UI app tests passed on macOS. The temporary app check uses copies of the app and test files linked to the actual local package products. It does not copy core module source. These are logic and integration tests, not iOS UI tests.
+- **Builds:** earlier Debug and Release builds passed for the iOS Simulator with Xcode 27.1. The author also confirmed that the latest app builds and that selected city history stays after restarting the app.
+- **Compatibility:** the project targets iOS 17 or later on iPhone. Source compilation passed for the app, all three modules and all four test targets with the iOS 17 simulator target on arm64 and x86_64. This does not launch the app. An actual run on an iOS 17 device or runtime remains unverified.
+- **Remaining device checks:** typing and pasted validation in the real keyboard, offline recovery and retry, leaving a request in progress, and all screen states on smaller phones and larger text.
 
-Before accepting stages 3 and 4 on iOS, check Polish names, rejected typing and pasted text, rapid query changes, offline and retry states, and history after selecting a city and restarting the app. Check weather for different cities, all four required weather elements, back navigation, reopening details and leaving during a load or retry. Review the updated screens in light and dark appearance. Real service responses remain unverified here.
+The app does not cache weather. Internet access is required to load new search results and forecasts. History stores selected cities, rather than every typed query. History deletion and a multi-day forecast are outside this version's scope.
 
 ## Data source
 
