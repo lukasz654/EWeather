@@ -12,7 +12,9 @@ final class OpenMeteoDailyForecastRepositoryTests: XCTestCase {
         let request = await transport.lastRequest
         let url = try XCTUnwrap(request?.url)
         let components = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
-        let query = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).map { ($0.name, $0.value) })
+        let query = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).compactMap { item in
+            item.value.map { (item.name, $0) }
+        })
         XCTAssertEqual(url.scheme, "https")
         XCTAssertEqual(url.host, "api.open-meteo.com")
         XCTAssertEqual(url.path, "/v1/forecast")
@@ -71,14 +73,19 @@ final class OpenMeteoDailyForecastRepositoryTests: XCTestCase {
     }
 
     func testRejectsInvalidUnitsUnknownZoneAndMissingDates() async throws {
-        for replacement in [
-            ("\"°C\"", "\"°F\""), ("\"iso8601\"", "\"unixtime\""),
-            ("\"%\"", "\"mm\""), ("\"wmo code\"", "\"unknown\""),
-            ("Europe/Warsaw", "Unknown/Zone")
+        for (field, value) in [
+            ("temperature_2m_min", "°F"), ("time", "unixtime"),
+            ("precipitation_probability_max", "mm"), ("weather_code", "unknown")
         ] {
-            let json = try body().replacingOccurrences(of: replacement.0, with: replacement.1)
+            let json = try changingRoot { root in
+                var units = root["daily_units"] as! [String: String]
+                units[field] = value
+                root["daily_units"] = units
+            }
             await assertFailure(.invalidData, transport: StubHTTPTransport(body: json))
         }
+        let unknownZone = try changingRoot { $0["timezone"] = "Unknown/Zone" }
+        await assertFailure(.invalidData, transport: StubHTTPTransport(body: unknownZone))
         await assertFailure(.invalidData, transport: StubHTTPTransport(body: #"{"timezone":"Europe/Warsaw","daily":{}}"#))
     }
 
@@ -164,6 +171,13 @@ final class OpenMeteoDailyForecastRepositoryTests: XCTestCase {
             "daily": daily
         ]
         return try XCTUnwrap(String(data: JSONSerialization.data(withJSONObject: json), encoding: .utf8))
+    }
+
+    private func changingRoot(_ change: (inout [String: Any]) -> Void) throws -> String {
+        let original = Data(try body().utf8)
+        var root = try XCTUnwrap(JSONSerialization.jsonObject(with: original) as? [String: Any])
+        change(&root)
+        return try XCTUnwrap(String(data: JSONSerialization.data(withJSONObject: root), encoding: .utf8))
     }
 
     private func assertFailure(_ expected: WeatherFailure, transport: StubHTTPTransport, file: StaticString = #filePath, line: UInt = #line) async {
