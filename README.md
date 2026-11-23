@@ -92,10 +92,11 @@ One local package keeps setup simple while making the core dependencies explicit
 
 - Opening details loads weather using the selected city's coordinates. A different city gets its own screen model and request. Returning to search and opening details again creates a new request; an already loaded model keeps its values when it reappears.
 - Hourly rows show the time and temperature. A native picker offers 3, 5, 8 and 12 hours; each new details screen starts with 3 hours. Accessibility text sizes use a native menu instead of segments.
-- Changing the window starts a new hourly request and immediately invalidates the old result. The picker remains available while loading and after an error. Selecting the same window again keeps loaded data. Daily weather stays independent.
+- Changing the window starts a new hourly request and immediately invalidates older requests. Current conditions and hourly rows keep their last loaded values until the new response arrives. A small progress indicator keeps the same space below the picker, and a label shows which range the visible data belongs to. Daily weather stays independent.
+- A failed or empty update keeps the previous forecast and shows a message with a retry button in the hourly section. Selecting the displayed range again cancels the pending update without another request. Late responses cannot replace the selected range.
 - The screen shows loading, weather values, an empty result, offline or a service/data error. Empty and failed states have a retry button. Retries run in the SwiftUI view task, which is cancelled when the screen closes.
 - Closing the screen also invalidates its request identifier. A late response cannot change a newer load, even if the provider ignores cancellation. Concurrent duplicate loads are ignored.
-- Missing values show `Brak danych`; missing hourly values keep their timestamp. Current conditions can still be shown when hourly data is unavailable. If current values and the selected future hours contain no weather values, the screen shows an empty result.
+- Missing values show `Brak danych`; missing hourly values keep their timestamp. Current conditions can still be shown when hourly data is unavailable. If the first response contains no current or future weather values, the screen shows an empty result. An empty update keeps the last loaded forecast and reports that no new data was received.
 - Dates and time ranges use the forecast city's time zone. Repeated local clock hours show UTC offsets so they can be told apart. Rain time ranges also show offsets if a clock change occurs inside the interval.
 - The live screen credits Open-Meteo, CC BY 4.0 and GeoNames.
 
@@ -135,14 +136,14 @@ swift test --package-path Packages/WeatherKit
 | `WeatherDomainTests` | City names, local calendar dates, identity and missing daily values | 8 |
 | `WeatherApplicationTests` | Search, hourly and daily selection, time boundaries, cancellation and history rules | 23 |
 | `WeatherDataTests` | HTTP, hourly ranges and daily requests, mapping, weather codes, dates and isolated history storage | 35 |
-| `EWaeatherTests` | Screen states, range changes, debounce, retry, cancellation, dates and forecast integration | 59 |
+| `EWaeatherTests` | Screen states, range changes with visible data, debounce, retry, cancellation, dates and forecast integration | 64 |
 
 Package tests do not import the app. Domain and Application tests do not import WeatherData or use real network or storage implementations. App integration tests use the public data API with controlled HTTP responses. The app and data test targets each keep their own small transport stub so test helpers are not exposed as a library product.
 
 ## Validation and limits
 
-- **Automated checks:** 66 package tests and 59 non-UI app tests passed on macOS: 125 tests in total. The temporary app check uses copies of the app and test files linked to the actual local package products. It does not copy core module source. These are logic and integration tests, not iOS UI tests.
-- **Builds:** Debug build-for-testing passed for the iOS Simulator with Xcode 27.1 after adding hourly range selection. The last verified Release build includes the three-day forecast and predates hourly range selection; a Release rebuild for this change remains unverified. The author previously confirmed that selected city history stays after restarting the app.
+- **Automated checks:** 66 package tests passed during core validation. After the changes to keep data visible during range updates, all 64 non-UI app tests passed on macOS. Together, the suites contain 130 tests. The temporary app check uses copies of the app and test files linked to the actual local package products. It does not copy core module source. These are logic and integration tests, not iOS UI tests.
+- **Builds:** The last successful full Debug build-for-testing used Xcode 27.1 and includes hourly range selection. It predates the app icon and the changes to keep data during range updates. The last verified Release build includes the three-day forecast and predates hourly range selection. Full builds of the current revision remain unverified. The author previously confirmed that selected city history stays after restarting the app.
 - **Compatibility:** the project targets iOS 17 or later on iPhone. Source compilation passed for the app, all three modules and all four test targets with the iOS 17 simulator target on arm64 and x86_64. This does not launch the app. An actual run on an iOS 17 device or runtime remains unverified.
 - **Remaining device checks:** typing and pasted validation in the real keyboard, offline recovery and retry, leaving a request in progress, and all screen states on smaller phones and larger text.
 
